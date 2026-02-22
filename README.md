@@ -1,6 +1,31 @@
-# Bias Metrics Under Embedding Swaps + Full Telemetry
+# Direction Provenance + Matched-Cost Causal Editing
 
-This experiment evaluates how bias/fairness metrics change when you keep prompts fixed but swap the embedding representation (layer, pooling, model type), while logging high-resolution telemetry to explain variance and compute costs.
+This repo contains bias/casual-direction experiments with a reproducibility-first workflow:
+- matched-cost causal control sweeps
+- hermetic direction artifacts + hashes
+- integrity/family gates for publishable runs
+
+## Repository Map
+
+- `configs/`: experiment configurations
+- `docs/`: specs and provenance contract
+- `scripts/`: run, aggregate, integrity, and manifest tools
+- `src/`: core metrics/telemetry utilities
+- `runs/`: run outputs and generated manifests
+- `paper.md`: methods/results write-up
+
+## Reproducibility Gates
+
+Single command (new artifacts + paper assets):
+
+```bash
+cd /home/pantelis/Desktop/Projects/Work/bias_embedding_exp
+./scripts/ci_gates.sh
+```
+
+Reference docs:
+- `docs/provenance.md`
+- `README_provenance.md`
 
 ## Quickstart
 
@@ -70,10 +95,10 @@ PLL results are written to `results_pll.jsonl` and a summary to `results_pll_sum
 ## Layout
 
 - `configs/` experiment configs
-- `docs/` experiment spec and notes
-- `scripts/` entrypoints
+- `docs/` experiment spec, notes, provenance
+- `scripts/` entrypoints and gates
 - `src/` experiment code
-- `runs/` run outputs
+- `runs/` run outputs, manifests, paper assets
 - `results/` aggregated results
 
 Per-run outputs:
