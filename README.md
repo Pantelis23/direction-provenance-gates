@@ -1,117 +1,89 @@
-# Direction Provenance + Matched-Cost Causal Editing
+# Direction Provenance Gates for Causal Editing
 
-This repo contains bias/casual-direction experiments with a reproducibility-first workflow:
-- matched-cost causal control sweeps
-- hermetic direction artifacts + hashes
-- integrity/family gates for publishable runs
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Provenance](https://img.shields.io/badge/provenance-hermetic-blue)](docs/provenance.md)
+[![Repro Gate](https://img.shields.io/badge/repro-gated-success)](scripts/ci_gates.sh)
 
-## Repository Map
+This repository packages matched-cost causal-direction experiments with a provenance-first workflow:
+- hermetic direction artifacts (`.npy` copies inside run outputs)
+- semantic + raw hash integrity checks
+- family-level acceptance gates
+- reproducible manifests and artifact index
 
-- `configs/`: experiment configurations
-- `docs/`: specs and provenance contract
-- `scripts/`: run, aggregate, integrity, and manifest tools
-- `src/`: core metrics/telemetry utilities
-- `runs/`: run outputs and generated manifests
-- `paper.md`: methods/results write-up
+See `paper.md` for the methods/results write-up.
 
-## Reproducibility Gates
-
-Single command (new artifacts + paper assets):
+## Quick Start
 
 ```bash
 cd path/to/direction-provenance-gates
-./scripts/ci_gates.sh
-```
-
-Reference docs:
-- `docs/provenance.md`
-- `README_provenance.md`
-
-## Quickstart
-
-```bash
-cd path/to/direction-provenance-gates
+python -m venv .venv
 source .venv/bin/activate
 python -m pip install -r requirements.txt
 source scripts/activate_env.sh
 python scripts/run_mvp.py --config configs/mvp.yaml
 ```
 
-## What This Covers
+## One-Command Reproducibility Gate
 
-- Embedding fragility across layers, pooling, and embedding models
-- Cross-metric agreement between embedding-based bias and probability-based bias
-- Layerwise attribution of bias deltas
-- Telemetry: timing, throughput, memory, GPU info, and reproducibility context
+```bash
+./scripts/ci_gates.sh
+```
+
+This checks:
+- family acceptance (`scripts/check_family_accept.py`)
+- direction integrity (`scripts/check_direction_integrity.py`)
+- manifest generation and verification
+- repo-level artifact index generation
+
+## Main Docs
+
+- `docs/provenance.md`: provenance contract and invariants
+- `README_provenance.md`: quick provenance checklist
+- `paper.md`: experiment summary and results
+
+## Typical Workflow
+
+1. Generate new artifacts (example):
+   - `./run_mc_orth_vs_supportavoid_mc4_newartifact.sh`
+2. Run gates:
+   - `./scripts/ci_gates.sh`
+3. Generate paper figures/tables:
+   - `.venv/bin/python scripts/make_paper_figures.py ...`
 
 ## AtlasLM Integration
 
-This project is set up to import from the local AtlasLM repo via `PYTHONPATH`.
-Run `source scripts/activate_env.sh` to add:
+`scripts/activate_env.sh` adds AtlasLM to `PYTHONPATH` using defaults:
 - `../AtlasLM`
 - `../AtlasLM/src`
 
-If your AtlasLM checkout is elsewhere, set:
+Override if needed:
 - `ATLASLM_ROOT=/path/to/AtlasLM`
 - `ATLASLM_SRC=/path/to/AtlasLM/src`
 
-This allows direct reuse of AtlasLM modules without repackaging.
+## Repository Layout
 
-## Data Format (SEAT/WEAT)
+- `configs/`: experiment configs
+- `docs/`: specs and provenance contract
+- `scripts/`: runners, analyzers, gates, manifests
+- `src/`: metrics and telemetry utilities
+- `runs/`: generated outputs/manifests (ignored in git)
+- `paper.md`: paper draft
+- `requirements-lock.txt`: frozen Python dependencies
 
-`configs/mvp.yaml` expects SEAT/WEAT-style tests under `data.seat_tests`:
+## Citation
 
-- `X`, `Y`: target sentence sets
-- `A`, `B`: attribute sentence sets
+If you use this repository, cite the project artifact and methodology document:
 
-Each test yields an effect size, permutation p-values, and diagnostics (anisotropy, singular values, conicity).
+```bibtex
+@misc{christou2026directionprovenance,
+  title        = {Direction Provenance Gates for Causal Editing},
+  author       = {Pantelis Christou},
+  year         = {2026},
+  howpublished = {GitHub repository},
+  note         = {\\url{https://github.com/Pantelis23/direction-provenance-gates}}
+}
+```
 
-You can provide sentence lists directly or use templating:
+## License
 
-- Direct list: `- "This person is a doctor."`
-- Templated: `templates: ["This person is a {t}."]` + `targets: ["doctor", "engineer"]`
-
-When using `pooling: "target"`, each sentence must include a `target` term (or a template `targets` list).
-
-## Data Format (PLL Group Bias)
-
-`data.pll_templates` defines counterfactual group swaps for PLL:
-
-- `templates`: list of template strings (preferred for diversity)
-- `group_pairs`: optional paired list `[[A, B], ...]` for matched names
-- `groupA`, `groupB`: list or string of group fillers (names)
-- `jobs`: list of job entries; each can be `\"engineer\"` or `{job: \"engineer\", article: \"an\"}`
-- `baseline_template` + `adjust_by_baseline`: optional baseline adjustment to reduce name priors
-- `baseline_templates`: per-template baselines (must align with `templates`)
-
-PLL bias is computed as `avg_logprob(groupA) - avg_logprob(groupB)` per template.
-When `adjust_by_baseline` is true, we compute per-name deltas:
-`Δ(name) = PLL(job sentence) - PLL(baseline sentence)` and then take group differences.
-
-## Random Split Control
-
-Optional `data.pll_random_split` performs K random equal splits of a name pool and reports the distribution of adjusted biases. Outputs:
-- `results_pll_random_split.jsonl`
-- summary stats in `results_pll_summary.json`
-
-PLL results are written to `results_pll.jsonl` and a summary to `results_pll_summary.json`.
-
-## Layout
-
-- `configs/` experiment configs
-- `docs/` experiment spec, notes, provenance
-- `scripts/` entrypoints and gates
-- `src/` experiment code
-- `runs/` run outputs, manifests, paper assets
-- `results/` aggregated results
-
-Per-run outputs:
-- `results_embed.jsonl` (SEAT/WEAT)
-- `results_pll.jsonl` (PLL)
-- `embedding_holm.json` (Holm correction)
-- `results_pll_summary.json` (PLL stats)
-
-## Next Steps
-
-- Point `configs/mvp.yaml` to your dataset and model.
-- Extend telemetry in `src/telemetry/logger.py` as needed.
+MIT. See `LICENSE`.
