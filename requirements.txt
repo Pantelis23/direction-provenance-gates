@@ -1,0 +1,8 @@
+pyyaml>=6.0
+numpy>=1.26
+pandas>=2.2
+tqdm>=4.66
+torch>=2.2
+transformers>=4.40
+# Optional sentence encoder backend:
+# sentence-transformers>=2.6
