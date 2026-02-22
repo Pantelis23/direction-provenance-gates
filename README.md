@@ -19,7 +19,7 @@ This repo contains bias/casual-direction experiments with a reproducibility-firs
 Single command (new artifacts + paper assets):
 
 ```bash
-cd /home/pantelis/Desktop/Projects/Work/bias_embedding_exp
+cd path/to/direction-provenance-gates
 ./scripts/ci_gates.sh
 ```
 
@@ -30,7 +30,7 @@ Reference docs:
 ## Quickstart
 
 ```bash
-cd /home/pantelis/Desktop/Projects/Work/bias_embedding_exp
+cd path/to/direction-provenance-gates
 source .venv/bin/activate
 python -m pip install -r requirements.txt
 source scripts/activate_env.sh
@@ -48,8 +48,12 @@ python scripts/run_mvp.py --config configs/mvp.yaml
 
 This project is set up to import from the local AtlasLM repo via `PYTHONPATH`.
 Run `source scripts/activate_env.sh` to add:
-- `/home/pantelis/Desktop/Projects/Work/AtlasLM`
-- `/home/pantelis/Desktop/Projects/Work/AtlasLM/src`
+- `../AtlasLM`
+- `../AtlasLM/src`
+
+If your AtlasLM checkout is elsewhere, set:
+- `ATLASLM_ROOT=/path/to/AtlasLM`
+- `ATLASLM_SRC=/path/to/AtlasLM/src`
 
 This allows direct reuse of AtlasLM modules without repackaging.
 

@@ -10,7 +10,7 @@ This project uses provenance-first direction artifacts for causal intervention r
 
 ## Golden integrity gate (new artifacts)
 ```bash
-cd /home/pantelis/Desktop/Projects/Work/bias_embedding_exp
+cd path/to/direction-provenance-gates
 .venv/bin/python scripts/check_direction_integrity.py \
   --seed-glob 'runs/*_newartifact/seed*.matched_cost_summary.json' \
   --hash-mode both --require-alias --strict

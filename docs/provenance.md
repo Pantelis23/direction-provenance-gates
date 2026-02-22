@@ -29,7 +29,7 @@ Each per-control record (in `matched_cost_summary.json` and `results_causal_summ
 For NEW artifacts (expected to include hermetic alias fields):
 
 ```bash
-cd /home/pantelis/Desktop/Projects/Work/bias_embedding_exp
+cd path/to/direction-provenance-gates
 .venv/bin/python scripts/check_direction_integrity.py \
   --seed-glob 'runs/*/seed*.matched_cost_summary.json' \
   --hash-mode both --require-alias --strict

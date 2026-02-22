@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-cd /home/pantelis/Desktop/Projects/Work/bias_embedding_exp
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd -- "${SCRIPT_DIR}/.." && pwd)"
+cd "$REPO_ROOT"
 
 # 1) Basic syntax gate
 .venv/bin/python -m py_compile scripts/*.py

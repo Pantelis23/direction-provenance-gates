@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-cd /home/pantelis/Desktop/Projects/Work/bias_embedding_exp
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
 OUTDIR="runs/mc_orth_vs_supportavoid_mc16"
 mkdir -p "$OUTDIR"
 MASTER_LOG="$OUTDIR/master.log"

@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set +e
 
-cd /home/pantelis/Desktop/Projects/Work/bias_embedding_exp || exit 1
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR" || exit 1
 mkdir -p runs/mc_shuf_matched_mcK16_seeds
 
 fail_count=0
