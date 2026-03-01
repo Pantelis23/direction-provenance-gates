@@ -50,16 +50,6 @@ This checks:
 3. Generate paper figures/tables:
    - `.venv/bin/python scripts/make_paper_figures.py ...`
 
-## AtlasLM Integration
-
-`scripts/activate_env.sh` adds AtlasLM to `PYTHONPATH` using defaults:
-- `../AtlasLM`
-- `../AtlasLM/src`
-
-Override if needed:
-- `ATLASLM_ROOT=/path/to/AtlasLM`
-- `ATLASLM_SRC=/path/to/AtlasLM/src`
-
 ## Repository Layout
 
 - `configs/`: experiment configs
