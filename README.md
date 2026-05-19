@@ -1,6 +1,6 @@
 # Direction Provenance Gates for Causal Editing
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Provenance](https://img.shields.io/badge/provenance-hermetic-blue)](docs/provenance.md)
 [![Repro Gate](https://img.shields.io/badge/repro-gated-success)](scripts/ci_gates.sh)
 
@@ -76,4 +76,4 @@ If you use this repository, cite the project artifact and methodology document:
 
 ## License
 
-MIT. See `LICENSE`.
+Apache 2.0. See `LICENSE` and `NOTICE`.
