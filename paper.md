@@ -169,9 +169,9 @@ No pair of controls differs, on the signed effect (sign-flip p = 0.53–0.81), o
 | 11 | orth | +0.0001 | 0.0012 | 0.0005 | 0.0008 | 70.9 | < 10⁻⁵ |
 | 11 | support-avoid | -0.0007 | 0.0016 | 0.0007 | 0.0010 | 82.5 | < 10⁻⁵ |
 | 11 | random-mask | +0.0001 | 0.0006 | 0.0004 | 0.0004 | 37.9 | 0.0009 |
-- **H4, J-lens propagation.** ⟨ρ(A(v), |effect|) at blocks 1 and 6.⟩
+- **H4, J-lens propagation: failed.** The lens (300 prompts; corpus sha256 `7e0015e0…`, lens sha256 `b2d317b7…`) gives A(v) = ‖J_ℓ v‖ with little variation across random directions (coefficient of variation 7% at block 1, 15% at block 6), and A(v) does not predict |effect| under unit projection: Spearman ρ = −0.20 at block 1 (one-sided p = 0.91) and +0.14 at block 6 (p = 0.17). How strongly a random direction propagates to the output does not explain which random directions matter.
 - **H5, Qwen3-0.6B.** ⟨same tables.⟩
-- **Exploratory.** ⟨control differences and feature correlations, with the number of tests run.⟩
+- **Exploratory.** ⟨control differences at blocks 1 and 6.⟩ Feature correlations: for each block we correlated 4 direction features (logit-lens gender readout, activation gender contrast, projection size, α) with the signed and absolute effect, both pooled and per control. Only one feature was motivated in advance, projection size `proj_rms` = sqrt(E[(h·v)²]) at the edited positions, which is how much of the activation the edit removes. It correlates positively with |effect| under unit projection at all three blocks: ρ = +0.32 (block 1, p = 0.026), +0.47 (block 6, p = 0.001), +0.35 (block 11, p = 0.016). Only block 6 survives a Bonferroni correction across the 24 pooled absolute-effect tests. No other feature shows a consistent relationship. The consistent sign suggests that a random direction's effect is governed by how much activation lies along it, not by how it propagates (H4). This is a hypothesis for future work, not a result.
 
 **Reading the envelope-alignment numbers.** `abs_cos_to_source`, the cosine between |v| and |source|, drops from about 0.62 (orth) to about 0.09 (support-avoid) *by construction*: support-avoid is exactly zero where |source| is large. It checks that the construction worked. It is not a finding.
 
