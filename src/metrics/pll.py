@@ -51,7 +51,16 @@ class PLLScorer:
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
         if self.tokenizer.pad_token is None and self.tokenizer.eos_token is not None:
             self.tokenizer.pad_token = self.tokenizer.eos_token
-        self.model = AutoModelForCausalLM.from_pretrained(self.model_name)
+        # Optional explicit dtype (e.g. "float32"). Without it transformers
+        # picks its own default, which for bf16-stored checkpoints like Qwen3
+        # is bf16 -- too coarse for ~1e-3 log-prob effects.
+        dtype_name = model_cfg.get("dtype")
+        if dtype_name:
+            import torch
+
+            self.model = AutoModelForCausalLM.from_pretrained(self.model_name, dtype=getattr(torch, str(dtype_name)))
+        else:
+            self.model = AutoModelForCausalLM.from_pretrained(self.model_name)
         if self.model.config.pad_token_id is None and self.tokenizer.pad_token_id is not None:
             self.model.config.pad_token_id = self.tokenizer.pad_token_id
         self.model.to(self.device)

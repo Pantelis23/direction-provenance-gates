@@ -1,18 +1,19 @@
 #!/usr/bin/env bash
 # Matched-cost 16-seed x 3-control sweep at one layer.
-# usage: ./run_mc16_layer.sh <early|mid|late> <d_path> <outdir>
+# usage: [CONFIG=...] [PREFIX=...] ./run_mc16_layer.sh <early|mid|late|N> <d_path> <outdir>
 set -euo pipefail
 cd "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 LAYER="$1"; DPATH="$2"; OUTDIR="$3"
+CONFIG="${CONFIG:-configs/mvp_jobs56_pronouns.yaml}"; PREFIX="${PREFIX:-mcl}"
 mkdir -p "$OUTDIR"
 exec > >(tee -a "$OUTDIR/master.log") 2>&1
 for s in $(seq 1 16); do
   OUT="$OUTDIR/seed${s}.matched_cost_summary.json"
   [ -f "$OUT" ] && { echo "skip seed $s"; continue; }
-  NAME="mcl_${LAYER}_s${s}"
+  NAME="${PREFIX}_${LAYER}_s${s}"
   echo "[$(date -Is)] launch layer=$LAYER seed=$s"
   if ! .venv/bin/python -u scripts/run_causal_matched_cost.py \
-    --config configs/mvp_jobs56_pronouns.yaml \
+    --config "$CONFIG" \
     --source-run runs/mvp_jobs56_pronouns_20260220_232956 \
     --d-path "$DPATH" \
     --layer "$LAYER" --mode project_out --alpha-policy same --intervention-scope non_name \

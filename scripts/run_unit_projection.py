@@ -28,6 +28,8 @@ def main() -> int:
     ap.add_argument("--out-dir", required=True)
     ap.add_argument("--seeds", default="1-16")
     ap.add_argument("--controls", default="orthogonal_random,orthogonal_random_support_avoid_top512,orthogonal_random_random_mask_top512")
+    ap.add_argument("--config", default="configs/mvp_jobs56_pronouns.yaml")
+    ap.add_argument("--run-prefix", default="p1")
     ap.add_argument("--alpha", type=float, default=1.0)
     ap.add_argument("--bootstrap-samples", type=int, default=5000)
     args = ap.parse_args()
@@ -42,10 +44,10 @@ def main() -> int:
             continue
         results = []
         for control in [c for c in args.controls.split(",") if c]:
-            name = f"p1_{args.layer}_s{seed}_{control}"
+            name = f"{args.run_prefix}_{args.layer}_s{seed}_{control}"
             cmd = [
                 sys.executable, str(REPO / "scripts/run_causal.py"),
-                "--config", "configs/mvp_jobs56_pronouns.yaml",
+                "--config", args.config,
                 "--source-run", "runs/mvp_jobs56_pronouns_20260220_232956",
                 "--d-path", args.d_path, "--layer", args.layer,
                 "--mode", "project_out", "--alpha-policy", "same", "--intervention-scope", "non_name",
