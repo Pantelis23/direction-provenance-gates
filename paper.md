@@ -4,7 +4,7 @@ Pantelis Christou (independent)
 
 ## Abstract
 
-Direction-vector interventions (activation steering, concept erasure, causal edits) are only as trustworthy as the vectors they apply, yet those vectors are usually treated as disposable by-products: regenerated from seeds, referenced by relative paths, and reconstructed after the fact. We describe a small provenance protocol that treats each direction as a hashed, hermetically copied artifact, and we evaluate it by injecting 13 realistic faults into a real experiment. A self-contained integrity gate (hash and file-identity checks against metadata written in the same run) catches 12 of the 13 once hardened; the original version caught 6. The remaining fault, a run silently redone end to end, is invisible to any self-contained check and is caught only by a ledger pinned outside the run (here, committed to git). A regenerate-then-verify CI step, which we had originally used, catches just 2 of the 13. We then use the gates in a pre-registered test of the most common control in this literature, the random direction, in GPT-2 and Qwen3-0.6B. ⟨RESULT sentence: whether random directions are null under unit projection vs matched cost, across depths and models.⟩ ⟨Reproducibility sentence: legacy hash reproduction.⟩
+Direction-vector interventions (activation steering, concept erasure, causal edits) are only as trustworthy as the vectors they apply, yet those vectors are usually treated as disposable by-products: regenerated from seeds, referenced by relative paths, and reconstructed after the fact. We describe a small provenance protocol that treats each direction as a hashed, hermetically copied artifact, and we evaluate it by injecting 13 realistic faults into a real experiment. A self-contained integrity gate (hash and file-identity checks against metadata written in the same run) catches 12 of the 13 once hardened; the original version caught 6. The remaining fault, a run silently redone end to end, is invisible to any self-contained check and is caught only by a ledger pinned outside the run (here, committed to git). A regenerate-then-verify CI step, which we had originally used, catches just 2 of the 13. We then use the gates in a pre-registered test of the most common control in this literature, the random direction, in GPT-2 and Qwen3-0.6B. ⟨RESULT sentence: whether random directions are null under unit projection vs matched cost, across depths and models.⟩ Regenerating the original directions from their seeds reproduced every hash and every effect estimate exactly.
 
 ## 1. Introduction
 
@@ -141,7 +141,17 @@ Q is only as good as the SEs. H1 checks them directly: 9 fixed directions are ea
 
 ⟨RESULTS — to be filled from the runs, one paragraph per pre-registered hypothesis, each stating pass/fail against its decision rule.⟩
 
-- **Integrity and reproducibility.** ⟨gate pass counts for every sweep; legacy hash reproduction at GPT-2 L11.⟩
+- **Integrity and reproducibility.** The GPT-2 layer-11 matched-cost sweep (16 seeds × 3 controls) passes the hardened gate with all 48 records clean. Regenerating the 32 orth and support-avoid directions from their seeds, seven months after the legacy sweep, reproduced all 32 semantic hashes, and with the legacy per-seed cost targets pinned, every effect estimate matched the legacy value exactly (maximum absolute difference 0.0). ⟨gate pass counts for the remaining sweeps.⟩
+
+**GPT-2, block 11, matched cost** (16 directions per control; Q on 15 df, Monte Carlo p with a floor of 5·10⁻⁶):
+
+| control | mean effect [seed-bootstrap 95% CI] | mean \|effect\| | τ | Q | p | mean α | abs-cos to source |
+|---|---|---|---|---|---|---|---|
+| orth | +0.0015 [−0.0028, +0.0059] | 0.0061 | 0.0037 | 62.6 | < 10⁻⁵ | 6.4 | 0.62 |
+| support-avoid | +0.0002 [−0.0025, +0.0029] | 0.0041 | 0.0035 | 59.0 | < 10⁻⁵ | 4.8 | 0.09 |
+| random-mask | −0.0004 [−0.0044, +0.0033] | 0.0061 | 0.0033 | 55.6 | < 10⁻⁵ | 11.3 | 0.37 |
+
+No pair of controls differs, on the signed effect (sign-flip p = 0.53–0.81), on |effect| (p = 0.13–0.99), or on τ (ratios 0.88–0.94, each 95% CI spanning roughly 0.4–2.0). Reaching the same cost takes the random-mask control about twice the α of orth, and support-avoid about three quarters of it.
 - **H1, SE calibration.** ⟨pooled Q/df and band; correction applied or not.⟩
 - **H2, heterogeneity under MC.** ⟨table: model × layer × control → Q, p, τ.⟩
 - **H3, P1 vs MC.** ⟨table: τ(P1), τ(MC), Q p under P1.⟩
