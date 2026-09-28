@@ -18,8 +18,6 @@ This paper makes three contributions:
 2. **A fault-injection evaluation of the gates** (Section 4): 13 injected faults, showing what a self-contained integrity gate can and cannot catch, and that a common CI pattern (regenerate the manifest, then verify it) catches almost nothing.
 3. **A worked example** (Section 5): a 16-seed matched-cost comparison of random control directions on GPT-2, re-run under the gate, including a subspace-matched control that the original version of this analysis lacked.
 
-⟨TODO(author): a real incident, if you have one: a vector that silently changed during a backfill, a path that resolved to the wrong run, etc. One concrete paragraph here would motivate the paper better than the threat model alone.⟩
-
 ## 2. Related work
 
 **Direction-based interventions.** Linear directions in activation space are used to steer generation (Turner et al., 2023, *Activation Addition*; Li et al., 2023, *Inference-Time Intervention*; Zou et al., 2023, *Representation Engineering*) and to remove concepts (Ravfogel et al., 2020, *INLP*; Elazar et al., 2021, *Amnesic Probing*; Belrose et al., 2023, *LEACE*). Gender directions in embeddings go back at least to Bolukbasi et al. (2016). These works establish methods; none of them specifies how the resulting vectors should be stored and verified across runs.
