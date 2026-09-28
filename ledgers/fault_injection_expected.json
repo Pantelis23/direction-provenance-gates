@@ -1,0 +1,16 @@
+{
+  "clean":                {"integrity": false, "pinned": false},
+  "regenerated_vector":   {"integrity": true,  "pinned": true},
+  "bitflip":              {"integrity": true,  "pinned": true},
+  "truncated":            {"integrity": true,  "pinned": true},
+  "swapped_controls":     {"integrity": true,  "pinned": true},
+  "alias_diverged":       {"integrity": true,  "pinned": true},
+  "hermetic_deleted":     {"integrity": true,  "pinned": true},
+  "all_copies_deleted":   {"integrity": true,  "pinned": true},
+  "joint_regeneration":   {"integrity": false, "pinned": true},
+  "non_canonical":        {"integrity": true,  "pinned": true},
+  "sha_conflict":         {"integrity": true,  "pinned": true},
+  "record_dropped":       {"integrity": true,  "pinned": true},
+  "empty_results":        {"integrity": true,  "pinned": true},
+  "summary_deleted":      {"integrity": true,  "pinned": true}
+}

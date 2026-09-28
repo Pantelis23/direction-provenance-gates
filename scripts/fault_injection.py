@@ -251,6 +251,11 @@ def main() -> int:
     ap.add_argument("--integrity-extra", default="", help="Extra args for check_direction_integrity.py (space-separated).")
     ap.add_argument("--out-json", default=None)
     ap.add_argument("--out-md", default=None)
+    ap.add_argument(
+        "--expect",
+        default=None,
+        help="JSON {fault: {gate: bool}}; exit 1 if any listed gate's detection differs (regression test).",
+    )
     args = ap.parse_args()
     extra = args.integrity_extra.split() if args.integrity_extra else []
 
@@ -292,6 +297,24 @@ def main() -> int:
         Path(args.out_md).write_text(md + "\n", encoding="utf-8")
     if args.out_json:
         Path(args.out_json).write_text(json.dumps(rows, indent=2), encoding="utf-8")
+    if args.expect:
+        expected = json.loads(Path(args.expect).read_text(encoding="utf-8"))
+        by_fault = {r["fault"]: r for r in rows}
+        bad = []
+        for fault, gates in expected.items():
+            if fault not in by_fault:
+                bad.append(f"{fault}: not run")
+                continue
+            for gate, want in gates.items():
+                got = bool(by_fault[fault][gate])
+                if got != bool(want):
+                    bad.append(f"{fault}/{gate}: expected {'caught' if want else 'pass'}, got {'caught' if got else 'pass'}")
+        if bad:
+            print("fault-injection regression FAILED:")
+            for b in bad:
+                print(f"- {b}")
+            return 1
+        print(f"fault-injection regression OK ({len(expected)} faults)")
     return 0
 
 

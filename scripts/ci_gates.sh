@@ -32,6 +32,14 @@ INTEGRITY_EXTRA=()
   --hash-mode both --require-alias --require-hermetic --check-canonical --strict \
   "${INTEGRITY_EXTRA[@]}"
 
+# 3b) Gate regression: re-inject the 13 faults into a sandbox copy of the
+# newartifact run and require the committed detection matrix. Weakening the
+# integrity gate (or dropping a flag above) turns this red.
+.venv/bin/python scripts/fault_injection.py \
+  --seed-glob "${FAULT_SEED_GLOB:-runs/mc_orth_vs_supportavoid_mc4_newartifact/seed*.matched_cost_summary.json}" \
+  --integrity-extra "--require-hermetic --check-canonical --expect-files 4 --expect-controls orthogonal_random,orthogonal_random_support_avoid_top512" \
+  --expect ledgers/fault_injection_expected.json
+
 # 4) Artifact manifest generation + validation
 MANIFEST_OUT="${ARTIFACTS_MANIFEST_OUT:-runs/_artifacts_newartifact.json}"
 FIG_GLOB="${ARTIFACTS_FIG_GLOB:-runs/*_paper/*.png}"
