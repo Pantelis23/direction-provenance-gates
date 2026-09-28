@@ -520,6 +520,13 @@ def main() -> int:
     )
     ap.add_argument("--concept-score-pool", choices=["mean", "last", "cls"], default="mean")
     ap.add_argument("--bootstrap-samples", type=int, default=2000)
+    ap.add_argument(
+        "--kl-corpus",
+        default=None,
+        help="JSON list of general texts; if set, record mean next-token KL(original||edited) over them (edit at all positions).",
+    )
+    ap.add_argument("--kl-n", type=int, default=100)
+    ap.add_argument("--kl-max-tokens", type=int, default=64)
     ap.add_argument("--run-name", default="causal_intervention")
     args = ap.parse_args()
 
@@ -1031,6 +1038,22 @@ def main() -> int:
         "block_bootstrap_delta_adj": {"mean": obs_delta, "ci95": ci_delta},
         "block_bootstrap_abs_reduction_adj": {"mean": obs_abs_red, "ci95": ci_abs_red},
     }
+
+    if args.kl_corpus:
+        kl_texts = json.loads(Path(args.kl_corpus).read_text(encoding="utf-8"))[: int(args.kl_n)]
+        kl = scorer.mean_next_token_kl(
+            kl_texts,
+            PLLIntervention(layer=layer_idx, direction=d_hat, mode=args.mode, alpha=float(args.alpha)),
+            max_tokens=int(args.kl_max_tokens),
+        )
+        summary["mean_kl_general"] = kl["mean_kl"]
+        summary["kl_general"] = {
+            **kl,
+            "corpus": str(args.kl_corpus),
+            "corpus_sha256": hashlib.sha256(Path(args.kl_corpus).read_bytes()).hexdigest(),
+            "n_requested": int(args.kl_n),
+            "max_tokens": int(args.kl_max_tokens),
+        }
 
     (run_dir / "results_causal_summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
     telemetry.log({"type": "causal_summary", **summary})
