@@ -154,7 +154,21 @@ Q is only as good as the SEs. H1 checks them directly: 9 fixed directions are ea
 No pair of controls differs, on the signed effect (sign-flip p = 0.53–0.81), on |effect| (p = 0.13–0.99), or on τ (ratios 0.88–0.94, each 95% CI spanning roughly 0.4–2.0). Reaching the same cost takes the random-mask control about twice the α of orth, and support-avoid about three quarters of it.
 - **H1, SE calibration: passed.** Re-evaluating each of 9 fixed directions (GPT-2 block 11, seeds 1–3 × 3 controls) on 16 held-out splits gives per-direction Q/df between 0.41 and 1.50, pooled Q/df = 1.046, inside the 95% band for calibrated SEs (0.775–1.253). The block-bootstrap SEs are accurate, so no correction is applied to Q below. For comparison, Q/df *across* directions at block 11 is 3.7–4.2: a fixed direction varies across held-out splits about as much as its SE predicts, while different random directions differ by several times that.
 - **H2, heterogeneity under MC.** ⟨table: model × layer × control → Q, p, τ.⟩
-- **H3, P1 vs MC.** ⟨table: τ(P1), τ(MC), Q p under P1.⟩
+- **H3, P1 vs MC: first part failed.** H3 predicted that under unit projection most of the 6 cells at blocks 1 and 6 would show no heterogeneity. All 6 do (p ≤ 0.009), as do all 3 at block 11. Even a plain projection of a random direction, with no amplification, shifts the bias metric by a real, direction-specific amount at every depth tested. The effects are small, with mean |effect| of about 0.0006–0.003 nats against 0.004–0.006 under matched cost at block 11, but they are several times their SEs. ⟨Second part, τ(P1) < τ(MC) at blocks 1 and 6, pending the MC sweeps.⟩
+
+**GPT-2, unit projection (α = 1)** (16 directions per cell; the same vectors at block 11 as under matched cost):
+
+| block | control | mean effect | mean \|effect\| | median SE | τ | Q | p |
+|---|---|---|---|---|---|---|---|
+| 1 | orth | -0.0006 | 0.0013 | 0.0008 | 0.0008 | 38.4 | 0.0009 |
+| 1 | support-avoid | +0.0001 | 0.0007 | 0.0006 | 0.0006 | 30.8 | 0.0094 |
+| 1 | random-mask | -0.0011 | 0.0030 | 0.0013 | 0.0019 | 72.8 | < 10⁻⁵ |
+| 6 | orth | +0.0002 | 0.0012 | 0.0007 | 0.0010 | 56.3 | < 10⁻⁵ |
+| 6 | support-avoid | +0.0007 | 0.0019 | 0.0008 | 0.0014 | 101.4 | < 10⁻⁵ |
+| 6 | random-mask | +0.0002 | 0.0010 | 0.0005 | 0.0007 | 45.9 | 0.0001 |
+| 11 | orth | +0.0001 | 0.0012 | 0.0005 | 0.0008 | 70.9 | < 10⁻⁵ |
+| 11 | support-avoid | -0.0007 | 0.0016 | 0.0007 | 0.0010 | 82.5 | < 10⁻⁵ |
+| 11 | random-mask | +0.0001 | 0.0006 | 0.0004 | 0.0004 | 37.9 | 0.0009 |
 - **H4, J-lens propagation.** ⟨ρ(A(v), |effect|) at blocks 1 and 6.⟩
 - **H5, Qwen3-0.6B.** ⟨same tables.⟩
 - **Exploratory.** ⟨control differences and feature correlations, with the number of tests run.⟩
