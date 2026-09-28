@@ -24,9 +24,13 @@ if [ "${#matches[@]}" -eq 0 ]; then
   exit 1
 fi
 shopt -u nullglob
+INTEGRITY_EXTRA=()
+[ -n "${EXPECT_FILES:-}" ] && INTEGRITY_EXTRA+=(--expect-files "$EXPECT_FILES")
+[ -n "${EXPECT_CONTROLS:-}" ] && INTEGRITY_EXTRA+=(--expect-controls "$EXPECT_CONTROLS")
 .venv/bin/python scripts/check_direction_integrity.py \
   --seed-glob "$DIR_GLOB" \
-  --hash-mode both --require-alias --strict
+  --hash-mode both --require-alias --require-hermetic --check-canonical --strict \
+  "${INTEGRITY_EXTRA[@]}"
 
 # 4) Artifact manifest generation + validation
 MANIFEST_OUT="${ARTIFACTS_MANIFEST_OUT:-runs/_artifacts_newartifact.json}"
@@ -49,14 +53,27 @@ if [ "${REQUIRE_PAPER_ASSETS}" = "1" ]; then
   fi
 fi
 
-.venv/bin/python scripts/make_artifacts_manifest.py \
-  --seed-glob "$DIR_GLOB" \
-  --out "$MANIFEST_OUT" \
-  --include-figures "$FIG_GLOB" \
-  --include-tables "$TABLE_GLOB"
-
+# Verify against the ledger PINNED in git (ledgers/). Regenerating the manifest
+# and then checking it would only prove the files match themselves, so the
+# pinned ledger is only rewritten when explicitly requested (UPDATE_LEDGER=1),
+# and that change then shows up in git diff for review.
+PINNED_LEDGER="${PINNED_LEDGER:-ledgers/artifacts_newartifact.json}"
+if [ "${UPDATE_LEDGER:-0}" = "1" ]; then
+  mkdir -p "$(dirname "$PINNED_LEDGER")"
+  .venv/bin/python scripts/make_artifacts_manifest.py \
+    --seed-glob "$DIR_GLOB" \
+    --out "$PINNED_LEDGER" \
+    --include-figures "$FIG_GLOB" \
+    --include-tables "$TABLE_GLOB"
+  cp "$PINNED_LEDGER" "$MANIFEST_OUT"
+  echo "pinned ledger updated: $PINNED_LEDGER (commit it)"
+fi
+if [ ! -f "$PINNED_LEDGER" ]; then
+  echo "missing pinned ledger: $PINNED_LEDGER (run once with UPDATE_LEDGER=1 and commit it)"
+  exit 1
+fi
 .venv/bin/python scripts/check_artifacts_manifest.py \
-  --manifest "$MANIFEST_OUT" \
+  --manifest "$PINNED_LEDGER" \
   --strict
 
 # 5) Repo-level artifacts index

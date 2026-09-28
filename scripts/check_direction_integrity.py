@@ -36,6 +36,20 @@ def _sha256_float32_npy(path: Path) -> str:
     return hashlib.sha256(v.tobytes()).hexdigest()
 
 
+def _canonical_issue(path: Path, norm_tol: float) -> str | None:
+    arr = np.load(path, allow_pickle=False)
+    if arr.dtype != np.float32:
+        return f"dtype={arr.dtype} (expected float32)"
+    if arr.ndim != 1:
+        return f"shape={arr.shape} (expected 1-D)"
+    if not np.all(np.isfinite(arr)):
+        return "non-finite values"
+    n = float(np.linalg.norm(arr.astype(np.float64)))
+    if abs(n - 1.0) > norm_tol:
+        return f"L2 norm={n:.8f} (expected 1 +/- {norm_tol:g})"
+    return None
+
+
 def _sha256_raw_file(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
@@ -138,7 +152,30 @@ def main() -> int:
         action="store_true",
         help="Treat missing alias direction file as an issue.",
     )
+    ap.add_argument(
+        "--require-hermetic",
+        action="store_true",
+        help="Treat a missing hermetic copy as an issue instead of falling back to the original run-dir path.",
+    )
+    ap.add_argument(
+        "--check-canonical",
+        action="store_true",
+        help="Require canonical vectors to be 1-D float32 with unit L2 norm.",
+    )
+    ap.add_argument("--norm-tol", type=float, default=1e-5)
+    ap.add_argument(
+        "--expect-files",
+        type=int,
+        default=None,
+        help="Exact number of seed summaries expected; a mismatch is an issue.",
+    )
+    ap.add_argument(
+        "--expect-controls",
+        default=None,
+        help="Comma-separated controls every summary must contain exactly once.",
+    )
     args = ap.parse_args()
+    expect_controls = [c.strip() for c in args.expect_controls.split(",") if c.strip()] if args.expect_controls else []
 
     checked = 0
     ok_canon = 0
@@ -170,21 +207,48 @@ def main() -> int:
             return 1
         return 0
     files = [str(p) for p in seed_files]
+    if args.expect_files is not None and len(files) != int(args.expect_files):
+        issues.append(f"expected {args.expect_files} seed summaries, found {len(files)}")
 
     for fp in files:
         summary_path = Path(fp)
         summary = json.loads(summary_path.read_text(encoding="utf-8"))
-        for rec in summary.get("results", []):
+        results = summary.get("results", [])
+        if not results:
+            issues.append(f"{summary_path}: no control records")
+        if expect_controls:
+            seen = [str(r.get("control")) for r in results]
+            for c in expect_controls:
+                if seen.count(c) != 1:
+                    issues.append(f"{summary_path}: control {c!r} appears {seen.count(c)} times (expected 1)")
+            for c in sorted(set(seen) - set(expect_controls)):
+                issues.append(f"{summary_path}: unexpected control {c!r}")
+        for rec in results:
             checked += 1
             ctrl = str(rec.get("control", "unknown"))
             record_id = f"{summary_path}:{ctrl}"
 
             fs = rec.get("final_summary") or {}
             expected = rec.get("direction_sha256") or fs.get("direction_sha256")
+            rec_sha, fs_sha = rec.get("direction_sha256"), fs.get("direction_sha256")
+            if rec_sha and fs_sha and rec_sha != fs_sha:
+                issues.append(f"{record_id}: direction_sha256 conflict record={rec_sha} final_summary={fs_sha}")
+                continue
             canon_hermetic = rec.get("direction_path_hermetic") or fs.get("direction_path_hermetic")
             canon_fallback = rec.get("direction_path") or fs.get("direction_path")
             alias_hermetic = rec.get("direction_path_control_hermetic") or fs.get("direction_path_control_hermetic")
             alias_fallback = rec.get("direction_path_control") or fs.get("direction_path_control")
+
+            if args.require_hermetic:
+                if not canon_hermetic:
+                    issues.append(f"{record_id}: no direction_path_hermetic recorded")
+                    continue
+                if _resolve_path(canon_hermetic, summary_path) is None:
+                    issues.append(f"{record_id}: hermetic direction file missing: {canon_hermetic}")
+                    continue
+                if args.require_alias and (not alias_hermetic or _resolve_path(alias_hermetic, summary_path) is None):
+                    issues.append(f"{record_id}: hermetic alias file missing: {alias_hermetic}")
+                    continue
 
             canonical = _resolve_path(canon_hermetic, summary_path)
             canon_source = "hermetic"
@@ -207,6 +271,15 @@ def main() -> int:
 
             canonical_semantic: str | None = None
             canonical_raw: str | None = None
+
+            if args.check_canonical:
+                try:
+                    ci = _canonical_issue(canonical, float(args.norm_tol))
+                except Exception as e:
+                    ci = f"failed to load: {e}"
+                if ci:
+                    issues.append(f"{record_id}: non-canonical direction {canonical}: {ci}")
+                    continue
 
             if args.hash_mode in {"semantic", "both"}:
                 if expected is None:
