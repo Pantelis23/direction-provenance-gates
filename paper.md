@@ -4,7 +4,7 @@ Pantelis Christou (independent)
 
 ## Abstract
 
-Direction-vector interventions (activation steering, concept erasure, causal edits) are only as trustworthy as the vectors they apply, yet those vectors are usually treated as disposable by-products: regenerated from seeds, referenced by relative paths, and reconstructed after the fact. We describe a small provenance protocol that treats each direction as a hashed, hermetically copied artifact, and we evaluate it by injecting 13 realistic faults into a real experiment. A self-contained integrity gate (hash and file-identity checks against metadata written in the same run) catches 12 of the 13 once hardened; the original version caught 6. The remaining fault, a run silently redone end to end, is invisible to any self-contained check and is caught only by a ledger pinned outside the run (here, committed to git). A regenerate-then-verify CI step, which we had originally used, catches just 2 of the 13. As a worked example we re-run a 16-seed matched-cost control experiment on GPT-2 under the hardened gate. ⟨V2: reproducibility sentence — e.g. "Regenerating the directions from their seeds reproduced all 32 legacy hashes."⟩ ⟨V2: one-sentence scientific result — expected shape: "Random directions orthogonal to the source have real, direction-specific effects on the bias metric (Cochran's Q, p < 1e-5) that average to zero; avoiding the source's top-512 support does not shrink them, and neither does a subspace-matched random mask."⟩
+Direction-vector interventions (activation steering, concept erasure, causal edits) are only as trustworthy as the vectors they apply, yet those vectors are usually treated as disposable by-products: regenerated from seeds, referenced by relative paths, and reconstructed after the fact. We describe a small provenance protocol that treats each direction as a hashed, hermetically copied artifact, and we evaluate it by injecting 13 realistic faults into a real experiment. A self-contained integrity gate (hash and file-identity checks against metadata written in the same run) catches 12 of the 13 once hardened; the original version caught 6. The remaining fault, a run silently redone end to end, is invisible to any self-contained check and is caught only by a ledger pinned outside the run (here, committed to git). A regenerate-then-verify CI step, which we had originally used, catches just 2 of the 13. We then use the gates in a pre-registered test of the most common control in this literature, the random direction, in GPT-2 and Qwen3-0.6B. ⟨RESULT sentence: whether random directions are null under unit projection vs matched cost, across depths and models.⟩ ⟨Reproducibility sentence: legacy hash reproduction.⟩
 
 ## 1. Introduction
 
@@ -16,13 +16,13 @@ This paper makes three contributions:
 
 1. **A provenance contract for direction vectors** (Section 3): canonical float32 unit vectors, a semantic hash of the payload, hermetic copies inside each run's output, and a ledger of hashes pinned in version control.
 2. **A fault-injection evaluation of the gates** (Section 4): 13 injected faults, showing what a self-contained integrity gate can and cannot catch, and that a common CI pattern (regenerate the manifest, then verify it) catches almost nothing.
-3. **A worked example** (Section 5): a 16-seed matched-cost comparison of random control directions on GPT-2, re-run under the gate, including a subspace-matched control that the original version of this analysis lacked.
+3. **A pre-registered test of the random-direction control** (Section 5): whether random directions are null baselines depends on what they are size-matched on. We compare matched cost with unit projection at three depths in GPT-2 and Qwen3-0.6B, with every vector run through the gates of Section 3.
 
 ## 2. Related work
 
 **Direction-based interventions.** Linear directions in activation space are used to steer generation (Turner et al., 2023, *Activation Addition*; Li et al., 2023, *Inference-Time Intervention*; Zou et al., 2023, *Representation Engineering*) and to remove concepts (Ravfogel et al., 2020, *INLP*; Elazar et al., 2021, *Amnesic Probing*; Belrose et al., 2023, *LEACE*). Gender directions in embeddings go back at least to Bolukbasi et al. (2016). These works establish methods; none of them specifies how the resulting vectors should be stored and verified across runs.
 
-**Controls for interventions.** Random-direction baselines are the standard control for directional effects. Our results (Section 5) add a caution: at matched cost, individual random directions have real, direction-specific effects, so a single random control is a noisy baseline.
+**Controls for interventions.** Random-direction baselines are the standard control for directional effects, size-matched either on norm or on some behavioural cost. Anthropic (2026) report that matched-norm random perturbations leave behaviour near baseline, while edits in a small subspace of verbalizable directions do not. Section 5 tests when the random-control premise holds in open models.
 
 **Reproducibility tooling.** Experiment trackers and data-versioning tools (e.g. MLflow, DVC) and reporting standards (Pineau et al., 2021; Mitchell et al., 2019; Gebru et al., 2021) record configurations, code versions and datasets. Our protocol is narrower and complementary: it pins the exact vector payloads that an intervention applied, and it is evaluated against injected faults, not just described.
 
@@ -97,74 +97,96 @@ Three lessons:
 
 The pinned ledger catches everything here, but only relative to the moment it was pinned: a fault present at pinning time (for example, a non-canonical vector) is pinned along with it. That is why the canonical-form check belongs in the integrity gate rather than only in the ledger.
 
-## 5. Worked example: matched-cost random controls on GPT-2
+**Keeping the gate honest.** The detection matrix above is committed (`ledgers/fault_injection_expected.json`), and `ci_gates.sh` re-injects all 13 faults on every run and fails if any detection changes. Dropping a single integrity flag turns CI red, naming the faults that would slip through.
 
-### 5.1 Setup
+## 5. Worked example: are random control directions null?
 
-**Model and data.** GPT-2 small (768-dim residual stream), layer 11. Sentences follow templates such as "{name} works as {article} {job}." for 5 gendered name pairs (John/Mary, Michael/Jennifer, …), 56 occupations and 8 templates. Each sentence is paired with a neutral baseline ("{name} works as a person.").
+Random directions are the default control for directional interventions: if a learned direction d changes behaviour and a random direction of "equal size" does not, the effect is attributed to d. This section asks whether that premise holds, under two meanings of "equal size", at three depths, in two models. All hypotheses and decision rules were pre-registered before the runs (`docs/prereg_2026-09-28.md`, committed at `dfb4e33`; Qwen addendum at `d490967`).
+
+### 5.1 Common setup
+
+**Data.** Sentences follow templates such as "{name} works as {article} {job}." for 5 gendered name pairs (John/Mary, Michael/Jennifer, …), 56 occupations and 8 templates. Each sentence is paired with a neutral baseline ("{name} works as a person.").
 
 **Bias metric.** For a name pair, the bias is the difference in average token log-probability between the male-name and female-name sentence, minus the same difference for the baseline template. The effect of an intervention is `abs_red = |bias_before| − |bias_after|`, averaged over held-out (template, job) blocks (5% of blocks, fixed split). Positive means the intervention reduced the magnitude of the bias. CIs are 95% block-bootstrap intervals (5,000 resamples).
 
-**Intervention.** At layer 11, on non-name tokens: h ← h − α (h·d) d. At α = 1 this projects d out. The matched α values here are about 5, so the component along d is reversed and amplified (about −4×), not removed.
+**Intervention.** At one layer, on non-name tokens: h ← h − α (h·d) d, applied to the block's output (the residual stream).
 
-**Source direction.** A ridge-regression direction (λ = 1) that predicts a name pair's baseline-adjusted bias from the difference of the two sentences' layer-11 mean-pooled hidden states (1,555 training pairs, train Pearson r = 0.94). It was trained with a 30% block holdout using the same block hash, so the 5% evaluation blocks are a subset of blocks it never saw. No control direction ever uses it directly; it only defines what the controls must be orthogonal to and which coordinates they must avoid.
+**Source directions.** Per layer, a ridge-regression direction (λ = 1) predicts a name pair's baseline-adjusted bias from the difference of the two sentences' mean-pooled hidden states at that layer. It was trained with a 30% block holdout using the same block hash as the evaluation split, so the 5% evaluation blocks are a subset of blocks it never saw. No control ever applies it; it only defines what the controls must be orthogonal to and which coordinates they avoid.
 
 **Controls.** One direction per seed and control (seeds 1–16):
 - `orth`: Gaussian random, orthogonalised to the source.
-- `support-avoid`: Gaussian random on the 256 coordinates *outside* the source's top-512 |coordinates|, orthogonalised to the source. Those 256 coordinates carry only 1.6% of the source's energy.
-- `random-mask` (new): the same construction on 256 coordinates chosen uniformly at random. It matches support-avoid's dimensionality but not its avoidance, which separates "avoids the source's support" from "confined to one third of the coordinates".
+- `support-avoid`: Gaussian random on the coordinates *outside* the source's top-512 |coordinates|, orthogonalised to the source. In GPT-2 that leaves 256 of 768 coordinates.
+- `random-mask`: the same construction with 512 coordinates masked uniformly at random. It matches support-avoid's dimensionality but not its avoidance, separating "avoids the source's support" from "confined to a third of the coordinates".
 
-**Matched cost.** For each direction, α is calibrated so that the mean drop in sentence log-probability (a fluency cost) matches a per-seed target, to within max(0.003, 2% of the target). Targets are fixed to the values used in the original sweep, so orth and support-avoid are exact re-runs.
+**Models and layers.** GPT-2 small (12 blocks, d = 768) at blocks 1, 6 and 11; Qwen3-0.6B (28 blocks, d = 1024, float32, weights sha256 `f47f7117…`) at blocks 1, 14 and 26.
 
-**Statistics.** Per control: mean effect over seeds with a seed-bootstrap CI; per-seed significance counts; Cochran's Q across the 16 directions, using each direction's block-bootstrap SE, with a Monte Carlo p-value under the null that all directions share one effect; and the DerSimonian–Laird between-direction SD τ. Between controls: paired sign-flip permutation tests on the signed and absolute effects, and a seed-bootstrap CI for the ratio of τ values (`scripts/analyze_mc_controls.py`).
+**A disclosed flaw in the original layer-11 source direction.** In Hugging Face models the last entry of `hidden_states` has the final normalisation applied. The original GPT-2 layer-11 source direction was learned on that post-`ln_f` state but is applied to the pre-`ln_f` block output, where `ln_f`'s per-coordinate gain ranges from 0.004 to 17.4. The two spaces differ substantially, so at layer 11 "orthogonal to the source" and "the source's top-512 support" are defined in the wrong space. This does not affect whether random directions are null, which is the question here, but it does weaken any support-avoid interpretation at layer 11. The directions at GPT-2 blocks 1 and 6 and at all Qwen layers are learned and applied in the same space. For Qwen we therefore use block 26, not the last block, 27.
 
-### 5.2 Results
+### 5.2 Two meanings of "equal size"
 
-⟨V2: integrity — "The sweep passes the hardened gate (48 records) and is pinned in the ledger."⟩
+- **Matched cost (MC).** α is calibrated per direction so that the mean drop in sentence log-probability (a fluency cost) matches a per-seed target, to within max(0.003, 2% of the target). At GPT-2 layer 11 the targets are pinned to the legacy sweep's values, so orth and support-avoid are exact re-runs. Elsewhere the target is 5% of the weakest control's cost at α = 40. Matched α values are well above 1 (⟨range from the runs⟩), so the component along d is reversed and amplified, not removed.
+- **Unit projection (P1).** α = 1: a true projection of d out of the residual stream, with no calibration. This is the analogue of the matched-norm controls in Anthropic's J-space work (Section 6).
 
-⟨V2: reproducibility — hashes and effect equality vs legacy for orth and support-avoid.⟩
+### 5.3 Jacobian-lens propagation
 
-⟨V2: table — per control: matched, mean [CI], mean |effect|, sig+/sig−, τ, Q p, α, abs-cos to source.⟩
+For GPT-2 blocks 1 and 6 we fit a Jacobian lens (anthropics/jacobian-lens, commit `581d398`) on 300 WikiText-103 test paragraphs truncated to 128 tokens. J_ℓ is the average Jacobian of the final residual state with respect to the layer-ℓ residual. For a unit direction v, A(v) = ‖J_ℓ v‖ measures how strongly a perturbation along v propagates to the output. At GPT-2 block 11 nothing lies between the edit and `ln_f`, so the Jacobian lens reduces exactly to the logit lens and A(v) is not informative. We do not fit it there.
 
-⟨V2: pairwise — sign-flip p for signed and |effect|, τ ratios with CIs.⟩
+### 5.4 Statistics
 
-⟨V2: figure — per-seed effect with CI, three controls side by side.⟩
+Per control and condition: the mean effect over the 16 directions with a seed-bootstrap CI; Cochran's Q across directions, using each direction's block-bootstrap SE, with a Monte Carlo p-value under the null that all directions share one effect; and the DerSimonian–Laird between-direction SD τ. Between controls: paired sign-flip permutation tests and a seed-bootstrap CI for τ ratios (`scripts/analyze_mc_controls.py`).
 
-**Reading the envelope-alignment numbers.** `abs_cos_to_source` is the cosine between |v| and |source|. It drops from about 0.62 (orth) to about 0.09 (support-avoid) *by construction*: support-avoid is exactly zero on the coordinates where |source| is large. It is a check that the construction worked, not a finding.
+Q is only as good as the SEs. H1 checks them directly: 9 fixed directions are each re-evaluated on 16 different held-out splits, where their true effect is constant, so Q/df should be about 1 (`scripts/calibrate_block_se.py`).
 
-### 5.3 Interpretation
+### 5.5 Results
 
-⟨V2: fill after results. Draft, valid only if v2 matches the legacy analysis: Random orthogonal directions are not null. At matched cost each one shifts the bias metric by a real, direction-specific amount (Q far above its null), in both directions, averaging out near zero. Avoiding the source's support does not reduce this spread, and neither does confining the direction to a random third of the coordinates. For intervention studies, one random control direction is therefore a noisy baseline. The comparison should be against a distribution of random directions, reporting between-direction spread and not only the mean.⟩
+⟨RESULTS — to be filled from the runs, one paragraph per pre-registered hypothesis, each stating pass/fail against its decision rule.⟩
 
-## 6. Limitations
+- **Integrity and reproducibility.** ⟨gate pass counts for every sweep; legacy hash reproduction at GPT-2 L11.⟩
+- **H1, SE calibration.** ⟨pooled Q/df and band; correction applied or not.⟩
+- **H2, heterogeneity under MC.** ⟨table: model × layer × control → Q, p, τ.⟩
+- **H3, P1 vs MC.** ⟨table: τ(P1), τ(MC), Q p under P1.⟩
+- **H4, J-lens propagation.** ⟨ρ(A(v), |effect|) at blocks 1 and 6.⟩
+- **H5, Qwen3-0.6B.** ⟨same tables.⟩
+- **Exploratory.** ⟨control differences and feature correlations, with the number of tests run.⟩
 
-- One model (GPT-2 small), one layer, one bias metric, one source direction. ⟨Optional: second model, e.g. Qwen3-0.6B.⟩
-- The held-out set is small (5% of blocks), and all seeds share it. Per-seed CIs are therefore correlated, which is why we test heterogeneity with Q rather than by counting significant seeds.
-- Q relies on the block-bootstrap SEs being accurate. If they are too small, Q is inflated.
+**Reading the envelope-alignment numbers.** `abs_cos_to_source`, the cosine between |v| and |source|, drops from about 0.62 (orth) to about 0.09 (support-avoid) *by construction*: support-avoid is exactly zero where |source| is large. It checks that the construction worked. It is not a finding.
+
+## 6. Discussion
+
+**Relation to the J-space results.** Anthropic's interpretability team reports that matched-norm random perturbations leave Claude models' behaviour near baseline, while edits confined to a small "J-space" of verbalizable directions have strong effects (Anthropic, 2026). Our P1 condition is the closest analogue that open models allow. ⟨One paragraph after H3/H4: whether random unit projections are near-null at blocks 1 and 6 (agreement), whether matched cost changes that, and whether J-lens propagation predicts which random directions matter.⟩
+
+**What this means for intervention studies.** ⟨Conditional on results. Draft: a random control is only a null baseline under the size-matching the study actually uses. Under cost matching α grows until something breaks, and "something" differs by direction. Studies should (i) state which quantity their controls match, (ii) use a distribution of random directions and report between-direction spread, and (iii) pin every vector they apply.⟩ Evaluation-awareness research is one place this matters directly. The J-space work locates representations of "this is an evaluation" and shows that ablating them changes behaviour. Studies that intervene on such directions, for example to explain behaviour differences between announced and unannounced evaluations of LLM ethical reasoning, as in the MoralMatrix project, need both the provenance guarantees of Section 3 and controls whose size-matching is stated and justified.
+
+**The same failure class outside direction vectors.** Any cached derived artifact that is regenerated or checked against itself has the failure modes of Section 4. Compiled GPU code objects cached between builds are one example: a stale cache produces silently wrong outputs unless it is verified against a reference fixed before the change.
+
+## 7. Limitations
+
+- One bias metric and one family of templates. Two small models (GPT-2 small, Qwen3-0.6B).
+- The held-out set is small (5% of blocks), and all seeds share it. Per-direction CIs are therefore correlated, which is why heterogeneity is tested with Q, with H1 checking the SEs it relies on.
+- The J-lens is fitted on 300 paragraphs, fewer than the paper's 1,000, although its authors report that about 100 is usable.
+- The layer-11 GPT-2 source direction was learned in the wrong space (Section 5.1).
 - The gates establish artifact identity, not causal validity. The support-avoid invariants establish no leakage onto the source's top-k coordinates, not the absence of other pathways.
 - The pinned ledger is only as trustworthy as its git history.
 
-## 7. Reproducing
+## 8. Reproducing
 
 ```bash
-./run_mc16_v2_randmask.sh                                  # 16 seeds x 3 controls
-.venv/bin/python scripts/check_direction_integrity.py \
-  --seed-glob 'runs/mc16_v2_randmask/seed*.matched_cost_summary.json' \
+./run_mc16_v2_randmask.sh        # GPT-2 L11, matched cost, 16 seeds x 3 controls (legacy targets)
+JLENS_SRC=<jacobian-lens checkout @ 581d398> ./run_followups.sh   # H1, P1 x 3 layers, J-lens, MC at L6 and L1
+./run_qwen_followups.sh          # H5: Qwen3-0.6B source directions, P1 and MC at L1/14/26
+.venv/bin/python scripts/check_direction_integrity.py --seed-glob '<sweep>/seed*.matched_cost_summary.json' \
   --hash-mode both --require-alias --require-hermetic --check-canonical --strict \
-  --expect-files 16 \
-  --expect-controls orthogonal_random,orthogonal_random_support_avoid_top512,orthogonal_random_random_mask_top512
-.venv/bin/python scripts/analyze_mc_controls.py \
-  --seed-glob 'runs/mc16_v2_randmask/seed*.matched_cost_summary.json' \
-  --controls orthogonal_random,orthogonal_random_support_avoid_top512,orthogonal_random_random_mask_top512 \
-  --reference-glob 'runs/mc_orth_vs_supportavoid_mc16/seed*.matched_cost_summary.json'
-.venv/bin/python scripts/fault_injection.py               # Section 4 table
-./scripts/ci_gates.sh                                      # verifies against the pinned ledger
+  --expect-files 16 --expect-controls orthogonal_random,orthogonal_random_support_avoid_top512,orthogonal_random_random_mask_top512
+.venv/bin/python scripts/analyze_mc_controls.py --seed-glob '<sweep>/seed*.matched_cost_summary.json' --controls <same three>
+.venv/bin/python scripts/fault_injection.py                        # Section 4 table
+./scripts/ci_gates.sh            # integrity gate, fault-injection regression, pinned-ledger check
 ```
 
 Dependencies are frozen in `requirements-lock.txt`. Run summaries embed `runtime_meta` (UTC time, Python and NumPy versions, hostname).
 
 ## References
 
+- Anthropic (2026). Verbalizable representations form a global workspace in language models. *Transformer Circuits Thread*. https://transformer-circuits.pub/2026/workspace/
 - Belrose, N., Schneider-Joseph, D., Ravfogel, S., Cotterell, R., Raff, E., & Biderman, S. (2023). LEACE: Perfect linear concept erasure in closed form. *NeurIPS*.
 - Bolukbasi, T., Chang, K.-W., Zou, J., Saligrama, V., & Kalai, A. (2016). Man is to computer programmer as woman is to homemaker? Debiasing word embeddings. *NeurIPS*.
 - Cochran, W. G. (1954). The combination of estimates from different experiments. *Biometrics*, 10(1).
