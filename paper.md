@@ -152,7 +152,7 @@ Q is only as good as the SEs. H1 checks them directly: 9 fixed directions are ea
 | random-mask | −0.0004 [−0.0044, +0.0033] | 0.0061 | 0.0033 | 55.6 | < 10⁻⁵ | 11.3 | 0.37 |
 
 No pair of controls differs, on the signed effect (sign-flip p = 0.53–0.81), on |effect| (p = 0.13–0.99), or on τ (ratios 0.88–0.94, each 95% CI spanning roughly 0.4–2.0). Reaching the same cost takes the random-mask control about twice the α of orth, and support-avoid about three quarters of it.
-- **H1, SE calibration.** ⟨pooled Q/df and band; correction applied or not.⟩
+- **H1, SE calibration: passed.** Re-evaluating each of 9 fixed directions (GPT-2 block 11, seeds 1–3 × 3 controls) on 16 held-out splits gives per-direction Q/df between 0.41 and 1.50, pooled Q/df = 1.046, inside the 95% band for calibrated SEs (0.775–1.253). The block-bootstrap SEs are accurate, so no correction is applied to Q below. For comparison, Q/df *across* directions at block 11 is 3.7–4.2: a fixed direction varies across held-out splits about as much as its SE predicts, while different random directions differ by several times that.
 - **H2, heterogeneity under MC.** ⟨table: model × layer × control → Q, p, τ.⟩
 - **H3, P1 vs MC.** ⟨table: τ(P1), τ(MC), Q p under P1.⟩
 - **H4, J-lens propagation.** ⟨ρ(A(v), |effect|) at blocks 1 and 6.⟩
