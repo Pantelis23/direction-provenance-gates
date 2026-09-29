@@ -153,8 +153,22 @@ Q is only as good as the SEs. H1 checks them directly: 9 fixed directions are ea
 
 No pair of controls differs, on the signed effect (sign-flip p = 0.53–0.81), on |effect| (p = 0.13–0.99), or on τ (ratios 0.88–0.94, each 95% CI spanning roughly 0.4–2.0). Reaching the same cost takes the random-mask control about twice the α of orth, and support-avoid about three quarters of it.
 - **H1, SE calibration: passed.** Re-evaluating each of 9 fixed directions (GPT-2 block 11, seeds 1–3 × 3 controls) on 16 held-out splits gives per-direction Q/df between 0.41 and 1.50, pooled Q/df = 1.046, inside the 95% band for calibrated SEs (0.775–1.253). The block-bootstrap SEs are accurate, so no correction is applied to Q below. For comparison, Q/df *across* directions at block 11 is 3.7–4.2: a fixed direction varies across held-out splits about as much as its SE predicts, while different random directions differ by several times that.
-- **H2, heterogeneity under MC.** ⟨table: model × layer × control → Q, p, τ.⟩
-- **H3, P1 vs MC: first part failed.** H3 predicted that under unit projection most of the 6 cells at blocks 1 and 6 would show no heterogeneity. All 6 do (p ≤ 0.009), as do all 3 at block 11. Even a plain projection of a random direction, with no amplification, shifts the bias metric by a real, direction-specific amount at every depth tested. The effects are small, with mean |effect| of about 0.0006–0.003 nats against 0.004–0.006 under matched cost at block 11, but they are several times their SEs. ⟨Second part, τ(P1) < τ(MC) at blocks 1 and 6, pending the MC sweeps.⟩
+- **H2, heterogeneity under a matched cost.** The pre-registered PLL-matched condition (MC) turned out to be flawed (addendum B). On 3 of 16 seeds at GPT-2 blocks 1 and 6, the per-seed target fell below the matching tolerance, so α = 0 counted as "matched". Per-seed targets also varied 10–60×, which confounds across-direction spread with seed-level cost (|effect| vs target: ρ = +0.43, p = 0.007 at block 1). The block-11 MC table above uses legacy targets, is free of vacuous matches, and is reported as secondary evidence. The replacement condition matches every direction to one fixed KL(original ‖ edited) of 0.10 nats per position on WikiText. ⟨Qwen rows.⟩ **GPT-2: all 9 cells heterogeneous** at p < 0.05/18.
+
+**GPT-2, KL-matched at 0.10 nats/position (addendum B)** — 144/144 directions matched (achieved KL 0.095–0.105, α 0.8–13.2); same vectors as under P1:
+
+| block | control | mean effect | mean \|effect\| | τ (KL) | τ (P1) | ratio | Q | p | mean α |
+|---|---|---|---|---|---|---|---|---|---|
+| 1 | orth | +0.0014 | 0.0120 | 0.0085 | 0.00075 | 11.3× | 76.1 | < 10⁻⁵ | 7.0 |
+| 1 | support-avoid | +0.0027 | 0.0135 | 0.0101 | 0.00056 | 18.1× | 57.9 | < 10⁻⁵ | 9.2 |
+| 1 | random-mask | +0.0083 | 0.0197 | 0.0094 | 0.00193 | 4.9× | 71.4 | < 10⁻⁵ | 7.1 |
+| 6 | orth | +0.0002 | 0.0052 | 0.0025 | 0.00098 | 2.5× | 49.9 | 0.0000 | 4.4 |
+| 6 | support-avoid | +0.0002 | 0.0045 | 0.0026 | 0.00140 | 1.9× | 94.4 | < 10⁻⁵ | 3.2 |
+| 6 | random-mask | +0.0027 | 0.0056 | 0.0027 | 0.00072 | 3.8× | 50.5 | 0.0000 | 6.1 |
+| 11 | orth | -0.0011 | 0.0046 | 0.0035 | 0.00078 | 4.5× | 71.7 | < 10⁻⁵ | 5.5 |
+| 11 | support-avoid | -0.0009 | 0.0035 | 0.0031 | 0.00101 | 3.1× | 63.8 | < 10⁻⁵ | 3.7 |
+| 11 | random-mask | +0.0007 | 0.0035 | 0.0024 | 0.00040 | 6.0× | 43.5 | 0.0001 | 6.4 |
+- **H3, P1 vs MC: first part failed.** H3 predicted that under unit projection most of the 6 cells at blocks 1 and 6 would show no heterogeneity. All 6 do (p ≤ 0.009), as do all 3 at block 11. Even a plain projection of a random direction, with no amplification, shifts the bias metric by a real, direction-specific amount at every depth tested. The effects are small, with mean |effect| of about 0.0006–0.003 nats against 0.004–0.006 under matched cost at block 11, but they are several times their SEs. The second part, as re-specified in addendum B (τ(KL) > τ(P1) in a majority of the 18 cells), holds in 9/9 GPT-2 cells, with ratios of 1.9–18×. ⟨Qwen.⟩
 
 **GPT-2, unit projection (α = 1)** (16 directions per cell; the same vectors at block 11 as under matched cost):
 
