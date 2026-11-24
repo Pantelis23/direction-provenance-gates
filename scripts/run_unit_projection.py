@@ -31,6 +31,7 @@ def main() -> int:
     ap.add_argument("--config", default="configs/mvp_jobs56_pronouns.yaml")
     ap.add_argument("--run-prefix", default="p1")
     ap.add_argument("--alpha", type=float, default=1.0)
+    ap.add_argument("--mode", choices=["project_out", "add"], default="project_out")
     ap.add_argument("--bootstrap-samples", type=int, default=5000)
     args = ap.parse_args()
     a, b = (int(x) for x in args.seeds.split("-"))
@@ -50,7 +51,7 @@ def main() -> int:
                 "--config", args.config,
                 "--source-run", "runs/mvp_jobs56_pronouns_20260220_232956",
                 "--d-path", args.d_path, "--layer", args.layer,
-                "--mode", "project_out", "--alpha-policy", "same", "--intervention-scope", "non_name",
+                "--mode", args.mode, "--alpha-policy", "same", "--intervention-scope", "non_name",
                 "--filter-template", "gender_names_jobs", "--eval-split", "test",
                 "--holdout-frac", "0.05", "--holdout-seed", "1337",
                 "--control-seed", "2027", "--direction-seed", str(seed),
@@ -78,7 +79,7 @@ def main() -> int:
             results.append(rec)
             eff = fs.get("block_bootstrap_abs_reduction_adj") or {}
             print(f"layer={args.layer} seed={seed} {control} abs_red={eff.get('mean')} ci={eff.get('ci95')}", flush=True)
-        out.write_text(json.dumps({"schema_version": 2, "condition": "P1", "layer": args.layer,
+        out.write_text(json.dumps({"schema_version": 2, "condition": "P1" if args.mode == "project_out" else f"{args.mode.upper()}-fixed", "mode": args.mode, "layer": args.layer,
                                    "alpha": args.alpha, "results": results}, indent=2), encoding="utf-8")
     print(f"DONE P1 layer {args.layer}")
     return 0

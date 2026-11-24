@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # KL-matched (prereg addendum B) 16-seed x 3-control sweep at one layer.
-# usage: [CONFIG=...] [PREFIX=...] ./run_mc16_layer.sh <early|mid|late|N> <d_path> <outdir>
+# usage: [CONFIG=...] [PREFIX=...] [MODE=project_out|add] [ALPHA_MAX=100] [ALPHA_PROBE=5.0] [SEEDS=...] ./run_mc16_layer.sh <early|mid|late|N> <d_path> <outdir>
 set -euo pipefail
 cd "$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 LAYER="$1"; DPATH="$2"; OUTDIR="$3"
@@ -16,11 +16,11 @@ for s in ${SEEDS:-$(seq 1 16)}; do
     --config "$CONFIG" \
     --source-run runs/mvp_jobs56_pronouns_20260220_232956 \
     --d-path "$DPATH" \
-    --layer "$LAYER" --mode project_out --alpha-policy same --intervention-scope non_name \
+    --layer "$LAYER" --mode "${MODE:-project_out}" --alpha-policy same --intervention-scope non_name \
     --controls orthogonal_random,orthogonal_random_support_avoid_top512,orthogonal_random_random_mask_top512 \
     --control-seed 2027 --direction-seed "$s" \
     --target-kl 0.10 --match-tol 0.005 \
-    --calibration-mode probe --alpha-probe 5.0 --alpha-min 0 --alpha-max 100 \
+    --calibration-mode probe --alpha-probe "${ALPHA_PROBE:-5.0}" --alpha-min 0 --alpha-max "${ALPHA_MAX:-100}" \
     --search-iters 6 --calib-bootstrap-samples 200 --match-check-bootstrap-samples 200 \
     --final-bootstrap-samples 5000 \
     --holdout-frac 0.05 --holdout-seed 1337 \
