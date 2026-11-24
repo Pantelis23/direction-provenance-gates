@@ -7,7 +7,7 @@ LAYER="$1"; DPATH="$2"; OUTDIR="$3"
 CONFIG="${CONFIG:-configs/mvp_jobs56_pronouns.yaml}"; PREFIX="${PREFIX:-klm}"
 mkdir -p "$OUTDIR"
 exec > >(tee -a "$OUTDIR/master.log") 2>&1
-for s in $(seq 1 16); do
+for s in ${SEEDS:-$(seq 1 16)}; do
   OUT="$OUTDIR/seed${s}.matched_cost_summary.json"
   [ -f "$OUT" ] && { echo "skip seed $s"; continue; }
   NAME="${PREFIX}_${LAYER}_s${s}"
