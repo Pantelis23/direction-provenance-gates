@@ -70,7 +70,7 @@ If you use this repository, cite the project artifact and methodology document:
 ```bibtex
 @misc{christou2026directionprovenance,
   title        = {Pin the Vector, Test the Control: Provenance Gates and Random-Direction Baselines for Activation Interventions},
-  author       = {Pantelis Christou},
+  author       = {Panteleimon-Panagiotis Christou},
   year         = {2026},
   howpublished = {GitHub repository},
   note         = {\\url{https://github.com/Pantelis23/direction-provenance-gates}}
