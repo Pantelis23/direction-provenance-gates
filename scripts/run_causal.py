@@ -159,8 +159,36 @@ def _make_orthogonal_support_avoid_direction(
     mask = np.zeros(n, dtype=bool)
     idx = np.argpartition(np.abs(d), n - k)[-k:]
     mask[idx] = True
+    return _make_orthogonal_masked_direction(d, mask, rng)
 
-    # Sample in complement of source top-k support.
+
+def _make_orthogonal_random_mask_direction(
+    source: np.ndarray,
+    rng: np.random.RandomState,
+    topk: int = 512,
+) -> np.ndarray:
+    """Subspace-matched control for support-avoid: same number of zeroed
+    coordinates, but the mask is chosen uniformly at random instead of from
+    the source's top-k support."""
+    src = np.asarray(source, dtype=np.float32)
+    src_norm = float(np.linalg.norm(src))
+    if src.ndim != 1 or src.size < 2 or src_norm <= 1e-12:
+        src_unit = src / (src_norm + 1e-12)
+        return _make_orthogonal_random_direction(src_unit, rng)
+    d = src / (src_norm + 1e-12)
+    n = int(d.size)
+    k = int(min(max(int(topk), 1), n - 1))
+    mask = np.zeros(n, dtype=bool)
+    mask[rng.choice(n, size=k, replace=False)] = True
+    return _make_orthogonal_masked_direction(d, mask, rng)
+
+
+def _make_orthogonal_masked_direction(
+    d: np.ndarray,
+    mask: np.ndarray,
+    rng: np.random.RandomState,
+) -> np.ndarray:
+    # Sample in complement of the masked coordinates.
     u = rng.normal(size=d.shape).astype(np.float32)
     u[mask] = 0.0
 
@@ -469,6 +497,7 @@ def main() -> int:
             "shuffled",
             "orthogonal_random",
             "orthogonal_random_support_avoid_top512",
+            "orthogonal_random_random_mask_top512",
             "marginal_matched_random_orth",
             "signed_resample_marginal_orth",
             "abs_marginal_matched_random_orth",
@@ -491,6 +520,13 @@ def main() -> int:
     )
     ap.add_argument("--concept-score-pool", choices=["mean", "last", "cls"], default="mean")
     ap.add_argument("--bootstrap-samples", type=int, default=2000)
+    ap.add_argument(
+        "--kl-corpus",
+        default=None,
+        help="JSON list of general texts; if set, record mean next-token KL(original||edited) over them (edit at all positions).",
+    )
+    ap.add_argument("--kl-n", type=int, default=100)
+    ap.add_argument("--kl-max-tokens", type=int, default=64)
     ap.add_argument("--run-name", default="causal_intervention")
     args = ap.parse_args()
 
@@ -535,6 +571,9 @@ def main() -> int:
         d_hat = d_hat / (np.linalg.norm(d_hat) + 1e-12)
     elif args.direction_control == "orthogonal_random_support_avoid_top512":
         d_hat = _make_orthogonal_support_avoid_direction(source_d_hat, rng, topk=512)
+        d_hat = d_hat / (np.linalg.norm(d_hat) + 1e-12)
+    elif args.direction_control == "orthogonal_random_random_mask_top512":
+        d_hat = _make_orthogonal_random_mask_direction(source_d_hat, rng, topk=512)
         d_hat = d_hat / (np.linalg.norm(d_hat) + 1e-12)
     elif args.direction_control == "marginal_matched_random_orth":
         d_hat = _make_marginal_matched_random_direction(source_d_hat, rng)
@@ -999,6 +1038,22 @@ def main() -> int:
         "block_bootstrap_delta_adj": {"mean": obs_delta, "ci95": ci_delta},
         "block_bootstrap_abs_reduction_adj": {"mean": obs_abs_red, "ci95": ci_abs_red},
     }
+
+    if args.kl_corpus:
+        kl_texts = json.loads(Path(args.kl_corpus).read_text(encoding="utf-8"))[: int(args.kl_n)]
+        kl = scorer.mean_next_token_kl(
+            kl_texts,
+            PLLIntervention(layer=layer_idx, direction=d_hat, mode=args.mode, alpha=float(args.alpha)),
+            max_tokens=int(args.kl_max_tokens),
+        )
+        summary["mean_kl_general"] = kl["mean_kl"]
+        summary["kl_general"] = {
+            **kl,
+            "corpus": str(args.kl_corpus),
+            "corpus_sha256": hashlib.sha256(Path(args.kl_corpus).read_bytes()).hexdigest(),
+            "n_requested": int(args.kl_n),
+            "max_tokens": int(args.kl_max_tokens),
+        }
 
     (run_dir / "results_causal_summary.json").write_text(json.dumps(summary, indent=2), encoding="utf-8")
     telemetry.log({"type": "causal_summary", **summary})

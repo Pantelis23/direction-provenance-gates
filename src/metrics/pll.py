@@ -51,7 +51,16 @@ class PLLScorer:
         self.tokenizer = AutoTokenizer.from_pretrained(self.model_name)
         if self.tokenizer.pad_token is None and self.tokenizer.eos_token is not None:
             self.tokenizer.pad_token = self.tokenizer.eos_token
-        self.model = AutoModelForCausalLM.from_pretrained(self.model_name)
+        # Optional explicit dtype (e.g. "float32"). Without it transformers
+        # picks its own default, which for bf16-stored checkpoints like Qwen3
+        # is bf16 -- too coarse for ~1e-3 log-prob effects.
+        dtype_name = model_cfg.get("dtype")
+        if dtype_name:
+            import torch
+
+            self.model = AutoModelForCausalLM.from_pretrained(self.model_name, dtype=getattr(torch, str(dtype_name)))
+        else:
+            self.model = AutoModelForCausalLM.from_pretrained(self.model_name)
         if self.model.config.pad_token_id is None and self.tokenizer.pad_token_id is not None:
             self.model.config.pad_token_id = self.tokenizer.pad_token_id
         self.model.to(self.device)
@@ -172,6 +181,56 @@ class PLLScorer:
             return _apply(out)
 
         return layers[layer_idx].register_forward_hook(_hook)
+
+    def mean_next_token_kl(
+        self,
+        texts: list[str],
+        intervention: PLLIntervention,
+        max_tokens: int = 64,
+    ) -> dict[str, float]:
+        """KL(original || edited) of the next-token distribution, averaged over
+        every position of every text (the edit is applied at all positions).
+
+        Heretic scores edits with the same divergence on the first generated
+        token only; averaging over all positions of general text gives a cost
+        that is independent of the evaluation sentences and is zero only when
+        the edit changes nothing.
+        """
+        import torch  # type: ignore
+        import torch.nn.functional as F  # type: ignore
+
+        total = 0.0
+        n_pos = 0
+        per_text: list[float] = []
+        for text in texts:
+            enc = self.tokenizer(text, return_tensors="pt", truncation=True, max_length=int(max_tokens))
+            ids = enc["input_ids"].to(self.device)
+            if ids.shape[1] < 2:
+                continue
+            with torch.no_grad():
+                base = F.log_softmax(self.model(input_ids=ids).logits.float(), dim=-1)
+                iv = PLLIntervention(
+                    layer=intervention.layer,
+                    direction=intervention.direction,
+                    mode=intervention.mode,
+                    alpha=intervention.alpha,
+                    token_mask=None,
+                )
+                handle = self._register_intervention_hook(iv, seq_len=int(ids.shape[1]))
+                try:
+                    edit = F.log_softmax(self.model(input_ids=ids, use_cache=False).logits.float(), dim=-1)
+                finally:
+                    handle.remove()
+                kl = (base.exp() * (base - edit)).sum(-1).squeeze(0)  # [T]
+            total += float(kl.sum().item())
+            n_pos += int(kl.numel())
+            per_text.append(float(kl.mean().item()))
+        return {
+            "mean_kl": total / max(n_pos, 1),
+            "n_texts": len(per_text),
+            "n_positions": n_pos,
+            "per_text_sd": float(np.std(per_text)) if per_text else 0.0,
+        }
 
     def token_mask_for_substring(self, text: str, substring: str) -> np.ndarray:
         """

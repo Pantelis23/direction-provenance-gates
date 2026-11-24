@@ -98,6 +98,9 @@ def _persist_direction_artifacts(summary: dict, run_dir: Path, out_dir: Path, co
 
 
 def _cost(summary: dict, mode: str = "neg_only", source: str = "pair") -> float:
+    if source == "kl":
+        v = summary.get("mean_kl_general")
+        return float(v) if v is not None else float("inf")
     if source == "pll":
         v = summary.get("mean_pll_change")
         if v is None:
@@ -483,6 +486,15 @@ def main() -> int:
     ap.add_argument("--target-logprob-change", type=float, default=-0.02)
     ap.add_argument("--target-pll-change", default=None, help="PLL quality target (float) or 'auto'.")
     ap.add_argument(
+        "--target-kl",
+        type=float,
+        default=None,
+        help="Match on mean next-token KL(original||edited) over --kl-corpus instead of PLL cost (fixed target).",
+    )
+    ap.add_argument("--kl-corpus", default="data/wikitext103_test_paragraphs.json")
+    ap.add_argument("--kl-n", type=int, default=100)
+    ap.add_argument("--kl-max-tokens", type=int, default=64)
+    ap.add_argument(
         "--auto-target-frac",
         type=float,
         default=0.5,
@@ -510,7 +522,12 @@ def main() -> int:
 
     auto_target_pll = False
     max_reachable_cost_control: dict[str, float] = {}
-    if args.target_pll_change is not None:
+    if args.target_kl is not None:
+        if args.target_pll_change is not None:
+            raise ValueError("--target-kl and --target-pll-change are mutually exclusive.")
+        cost_source = "kl"
+        target_cost = float(args.target_kl)
+    elif args.target_pll_change is not None:
         pll_target_raw = str(args.target_pll_change).strip().lower()
         cost_source = "pll"
         if pll_target_raw == "auto":
@@ -574,6 +591,12 @@ def main() -> int:
         base_cmd += ["--direction-seed", str(int(args.direction_seed))]
     if args.d_path:
         base_cmd += ["--d-path", args.d_path]
+    if cost_source == "kl":
+        base_cmd += [
+            "--kl-corpus", str(args.kl_corpus),
+            "--kl-n", str(int(args.kl_n)),
+            "--kl-max-tokens", str(int(args.kl_max_tokens)),
+        ]
     if args.variant_key:
         base_cmd += ["--variant-key", args.variant_key]
     if args.variant_hash:
