@@ -17,7 +17,7 @@ for s in ${SEEDS:-$(seq 1 16)}; do
     --source-run runs/mvp_jobs56_pronouns_20260220_232956 \
     --d-path "$DPATH" \
     --layer "$LAYER" --mode "${MODE:-project_out}" --alpha-policy same --intervention-scope non_name \
-    --controls orthogonal_random,orthogonal_random_support_avoid_top512,orthogonal_random_random_mask_top512 \
+    --controls "${CONTROLS:-orthogonal_random,orthogonal_random_support_avoid_top512,orthogonal_random_random_mask_top512}" \
     --control-seed 2027 --direction-seed "$s" \
     --target-kl 0.10 --match-tol 0.005 \
     --calibration-mode probe --alpha-probe "${ALPHA_PROBE:-5.0}" --alpha-min 0 --alpha-max "${ALPHA_MAX:-100}" \
