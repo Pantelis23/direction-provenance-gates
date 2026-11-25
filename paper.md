@@ -91,9 +91,9 @@ Here S is the source's top-k set. S is itself computed with `argpartition` and s
 | whole seed summary deleted | **missed** | caught | missed | caught |
 | **caught (of 13 faults)** | **6** | **12** | **2** | **13** |
 
-![Figure 2. Detection matrix for the 13 injected faults (plus a no-fault false-alarm check) across four checks. Green: caught; red: missed; grey: correctly passed. Totals at the bottom. Generated from the table above by `scripts/make_figures.py`.](figures/fig_fault_matrix.png)
+![Figure 1. Detection matrix for the 13 injected faults (plus a no-fault false-alarm check) across four checks. Green: caught; red: missed; grey: correctly passed. Totals at the bottom. Generated from the table above by `scripts/make_figures.py`.](figures/fig_fault_matrix.png)
 
-*Figure 2. Which check catches which injected fault. Each cell is labelled, so the figure does not rely on colour.*
+*Figure 1. Which check catches which injected fault. Each cell is labelled, so the figure does not rely on colour.*
 
 Three lessons:
 
@@ -181,9 +181,9 @@ The pre-registered χ² test is **anticonservative**: it rejects a true null 17�
 
 These binomial tail probabilities assume the cells are independent. The cells share held-out blocks across controls and conditions, so treat these probabilities as indicative. The counts themselves need no such assumption.
 
-![Figure 1. Per-direction effects on the bias metric for every random control direction, by model (rows), condition (columns) and block.](figures/fig_random_directions.png)
+![Figure 2. Per-direction effects on the bias metric for every random control direction, by model (rows), condition (columns) and block.](figures/fig_random_directions.png)
 
-*Figure 1. Effect of each random control direction (abs_red, nats; positive means the bias magnitude shrank) with its 95% block-bootstrap CI, for 16 directions per control (marker shape and colour), per block. The black diamond is the learned source direction under the same condition (post hoc reference run). Panels in a column share a y-axis. For scale, the mean |bias| before any edit is 0.15–0.17 nats in all three models.*
+*Figure 2. Effect of each random control direction (abs_red, nats; positive means the bias magnitude shrank) with its 95% block-bootstrap CI, for 16 directions per control (marker shape and colour), per block. The black diamond is the learned source direction under the same condition (post hoc reference run). Panels in a column share a y-axis. For scale, the mean |bias| before any edit is 0.15–0.17 nats in all three models.*
 
 **Integrity and reproducibility.** All 31 sweeps analysed here (1,488 direction records) pass the hardened gate with `--expect-files 16` and all three controls required, with no issues. Regenerating the 32 original orth and support-avoid directions from their seeds on the same machine, seven months after the legacy sweep, reproduced all 32 hashes. With the legacy cost targets pinned, it also reproduced every effect estimate exactly (maximum difference 0.0). Section 5.5 covers other hardware.
 
