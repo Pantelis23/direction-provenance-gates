@@ -1,0 +1,25 @@
+Claims about activation interventions are claims about specific
+direction vectors, and about the random directions used as their
+controls. We test both. First, we give a small provenance protocol that
+stores each direction as a hashed, hermetically copied artifact, and
+evaluate it by injecting 13 realistic faults into a real experiment. A
+hardened self-contained integrity gate catches 12 (the original caught
+6). The 13th, a run silently redone end to end, is caught only by a hash
+ledger pinned outside the run. A common regenerate-then-verify CI step
+catches 2. Second, in a pre-registered study on GPT-2, Qwen3-0.6B and
+Llama-3.2-1B (three blocks each, 16 random directions per control and
+condition), random directions are not reliably null controls. With a
+heterogeneity test we calibrated on the real data (the pre-registered χ²
+test proved anticonservative, rejecting true nulls 17--23\% of the
+time), random edits matched to a fixed general-text KL budget are
+heterogeneous in 23 of 27 cells, and additive edits in 27 of 36. Plain
+unit projections are null at the first block of every model but
+heterogeneous deeper in (14 of 27 cells overall). The learned bias
+direction itself beats all 48 of its random controls in only 9 of 30
+condition cells. Support-avoiding and subspace-matched random directions
+behave like unconstrained ones, and Jacobian-lens propagation does not
+predict which directions matter. Finally, regenerating directions
+reproduced every hash on the same machine seven months later, but not on
+different hardware, where vectors shifted by a few float32 ULPs while
+results agreed to 10⁻⁶. Stored vectors, not regenerated ones, are what
+should be pinned.
