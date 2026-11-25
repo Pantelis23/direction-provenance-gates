@@ -1,0 +1,24 @@
+cff-version: 1.2.0
+message: "If you use this work, please cite the preprint below."
+type: software
+title: "Pin the Vector, Test the Control: Provenance Gates and Random-Direction Baselines for Activation Interventions"
+authors:
+  - family-names: "Christou"
+    given-names: "Panteleimon-Panagiotis"
+date-released: "2026-11-25"
+doi: "10.5281/zenodo.24544119"
+url: "https://doi.org/10.5281/zenodo.24544119"
+repository-code: "https://github.com/Pantelis23/direction-provenance-gates"
+license: "Apache-2.0"
+preferred-citation:
+  type: article
+  title: "Pin the Vector, Test the Control: Provenance Gates and Random-Direction Baselines for Activation Interventions"
+  authors:
+    - family-names: "Christou"
+      given-names: "Panteleimon-Panagiotis"
+  year: 2026
+  month: 11
+  doi: "10.5281/zenodo.24544119"
+  url: "https://doi.org/10.5281/zenodo.24544119"
+  publisher:
+    name: "Zenodo"

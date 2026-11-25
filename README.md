@@ -3,13 +3,14 @@
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Provenance](https://img.shields.io/badge/provenance-hermetic-blue)](docs/provenance.md)
 [![Repro Gate](https://img.shields.io/badge/repro-gated-success)](scripts/ci_gates.sh)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.24544119.svg)](https://doi.org/10.5281/zenodo.24544119)
 
-Code, gates and pre-registered experiments for the paper in [`paper.md`](paper.md),
+Code, gates and pre-registered experiments for the paper in [`paper.md`](paper.md) ([PDF](paper/main.pdf) | [Zenodo Preprint](https://doi.org/10.5281/zenodo.24544119)),
 *Pin the Vector, Test the Control: Provenance Gates and Random-Direction Baselines for Activation Interventions*.
 
 **What it shows**
 - **Provenance gates, evaluated by fault injection.** Direction vectors are stored as hashed, hermetic artifacts. Of 13 injected faults, the hardened integrity gate catches 12. The 13th, a run silently redone end to end, is caught only by a ledger pinned in git. A regenerate-then-verify CI step catches just 2.
-- **Random directions are not null controls.** In GPT-2 and Qwen3-0.6B, random directions shift a gender-bias metric by real, direction-specific amounts: in 15/18 cells as a plain unit projection, and in 18/18 when edits are matched to a fixed general-text KL budget. Support-avoiding and subspace-matched random directions behave the same as unconstrained ones.
+- **Random directions are not reliably null controls.** In GPT-2, Qwen3-0.6B and Llama-3.2-1B (calibrated joint block bootstrap), random edits matched to a fixed general-text KL budget are heterogeneous in 23/27 cells, additive edits in 27/36, and plain unit projections are null at the first block of every model but heterogeneous deeper in (14/27 overall). The learned bias direction beats all 48 of its random controls in only 9/30 condition cells. Support-avoiding and subspace-matched random directions behave the same as unconstrained ones.
 - **Regeneration is not reproduction.** The same seed reproduces every vector hash on the same machine, but not on different hardware, where BLAS kernel dispatch changes a few float32 ULPs. Pin stored vectors; don't regenerate them.
 
 Hypotheses and decision rules are pre-registered in [`docs/prereg_2026-09-28.md`](docs/prereg_2026-09-28.md).
@@ -65,15 +66,17 @@ This checks:
 
 ## Citation
 
-If you use this repository, cite the project artifact and methodology document:
+If you use this repository or paper, cite the Zenodo preprint:
 
 ```bibtex
 @misc{christou2026directionprovenance,
-  title        = {Pin the Vector, Test the Control: Provenance Gates and Random-Direction Baselines for Activation Interventions},
-  author       = {Panteleimon-Panagiotis Christou},
-  year         = {2026},
-  howpublished = {GitHub repository},
-  note         = {\\url{https://github.com/Pantelis23/direction-provenance-gates}}
+  title     = {Pin the Vector, Test the Control: Provenance Gates and Random-Direction Baselines for Activation Interventions},
+  author    = {Panteleimon-Panagiotis Christou},
+  year      = {2026},
+  month     = nov,
+  publisher = {Zenodo},
+  doi       = {10.5281/zenodo.24544119},
+  url       = {https://doi.org/10.5281/zenodo.24544119}
 }
 ```
 
