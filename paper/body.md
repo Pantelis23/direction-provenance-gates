@@ -4,7 +4,7 @@ A direction-based intervention edits a hidden state h along a unit vector d. Cla
 
 None of these failure modes crash anything. The experiment still runs, the numbers still look plausible, and nothing tells you that the vector in the table is not the vector that produced it.
 
-This paper makes three contributions. All code, the pre-registration with its dated addenda, the pinned ledgers and the fault-injection harness are public at https://github.com/Pantelis23/direction-provenance-gates.
+This paper makes three contributions. All code, the pre-registration with its dated addenda, the pinned ledgers and the fault-injection harness are public at <https://github.com/Pantelis23/direction-provenance-gates>.
 
 1. **A provenance contract for direction vectors** (Section 3): canonical float32 unit vectors, a semantic hash of the payload, hermetic copies inside each run's output, and a ledger of hashes pinned in version control.
 2. **A fault-injection evaluation of the gates** (Section 4): 13 injected faults, showing what a self-contained integrity gate can and cannot catch, and that a common CI pattern (regenerate the manifest, then verify it) catches almost nothing.
@@ -41,6 +41,7 @@ Every direction is stored as a 1-D float32 array with unit L2 norm. Its semantic
 ## Gates
 
 **Integrity gate** (`scripts/check_direction_integrity.py`). For every record it checks that:
+
 - the hermetic copies exist (no silent fallback to the original run directory)
 - the canonical file is float32, 1-D, finite and has unit norm
 - its semantic hash matches the recorded hash, and the record-level and nested hashes agree
@@ -54,6 +55,7 @@ All of these compare the run against metadata the same run wrote.
 ## Support-avoid invariants
 
 One of the controls in Section 5 is a random direction that avoids the source direction's *support*: the top-k coordinates of |source|. Checking this by comparing top-k index sets is fragile, because ties at the k-th value make the overlap depend on sort order. Instead we check two invariants that do not depend on the candidate vector's own ranking:
+
 - `masked_support_mass = sum(|v[S]|) / sum(|v|) == 0`
 - `support_intrusion_frac_eps = mean(|v[S]| > eps) == 0`, where `eps = 8 · float32_eps · max|v|`
 
@@ -82,6 +84,7 @@ Here S is the source's top-k set. S is itself computed with `argpartition` and s
 | **caught (of 13 faults)** | **6** | **12** | **2** | **13** |
 
 ![Which check catches which injected fault. Each cell is labelled, so the figure does not rely on colour.](figures/fig_fault_matrix.pdf)
+
 Three lessons:
 
 1. **Silent fallbacks defeat hermeticity.** The original gate, on finding a hermetic copy missing, quietly checked the original run-directory file instead, and passed.
@@ -107,6 +110,7 @@ Random directions are the default control for directional interventions: if a le
 **Source directions.** Per block, a ridge-regression direction (λ = 1) predicts a name pair's baseline-adjusted bias from the difference of the two sentences' mean-pooled hidden states. It was trained with a 30% block holdout using the same block hash as the evaluation split, so the evaluation blocks are unseen. No control ever applies the source; it only defines what the controls are orthogonal to and which coordinates they avoid.
 
 **Controls.** One direction per seed (1–16) and control:
+
 - `orth`: Gaussian random, orthogonalised to the source.
 - `support-avoid`: Gaussian random on the coordinates *outside* the source's top-512 |coordinates|, orthogonalised to the source. In GPT-2 that leaves 256 of 768 coordinates.
 - `random-mask`: the same construction with 512 coordinates masked uniformly at random. It matches support-avoid's dimensionality but not its avoidance.
@@ -124,6 +128,7 @@ Random directions are the default control for directional interventions: if a le
 Matched α values are well above 1 (KL: 0.7–24.0; MC at block 11: 1.05–29.8), so matched edits reverse and amplify the component along v rather than removing it.
 
 **Additive edits** (addendum C). Projections *remove* a component; steering and the J-space controls mostly *add* one. With the same random directions, we therefore also ran h ← h + α v:
+
 - **ADD-N (matched displacement):** one fixed α per block, equal to the pilot median of E|h·v| on WikiText. That is the typical displacement a unit projection makes along a random direction, so ADD-N is P1's additive twin. It is a gentle edit: KL is about 0.001–0.006 nats per position, interpolated from the pilot's α grid.
 - **ADD-KL:** α calibrated to the same fixed KL = 0.10 nats per position as the KL condition, with per-block α ceilings fixed from a cost-only pilot.
 
@@ -142,7 +147,7 @@ Per control and condition we report the mean effect over the 16 directions, the 
 
 The pre-registered χ² test is **anticonservative**: it rejects a true null 17–23% of the time instead of 5%. The joint bootstrap is calibrated (3–7%). The mean cross-direction correlation of the recentred block data is close to zero in almost every cell (|r̄| ≤ 0.15 in 81 of 93 cells, with a maximum of 0.54), so the shared split itself contributes little. The miscalibration comes from the χ² tail with SEs estimated from 26 heavy-tailed blocks. **All p-values below are from the calibrated joint bootstrap.** The pre-registered χ² p-values are listed alongside for transparency, and the hypothesis table reports both verdicts.
 
-**Jacobian-lens propagation (H4).** For GPT-2 blocks 1 and 6 we fit a Jacobian lens (anthropics/jacobian-lens @ `581d398`) on 300 WikiText-103 paragraphs (Merity et al., 2017) of up to 128 tokens. J_$\ell$ is the average Jacobian of the final residual with respect to the block-$\ell$ residual. For a unit direction v, A(v) = ‖J_$\ell$ v‖ measures how strongly a perturbation along v propagates to the output. At GPT-2 block 11 nothing lies between the edit and `ln_f`, so the lens reduces to the logit lens and A(v) carries no information.
+**Jacobian-lens propagation (H4).** For GPT-2 blocks 1 and 6 we fit a Jacobian lens (anthropics/jacobian-lens @ `581d398`) on 300 WikiText-103 paragraphs (Merity et al., 2017) of up to 128 tokens. J_ℓ is the average Jacobian of the final residual with respect to the block-ℓ residual. For a unit direction v, A(v) = ‖J_ℓ v‖ measures how strongly a perturbation along v propagates to the output. At GPT-2 block 11 nothing lies between the edit and `ln_f`, so the lens reduces to the logit lens and A(v) carries no information.
 
 ## Results
 
@@ -169,6 +174,7 @@ The pre-registered χ² test is **anticonservative**: it rejects a true null 17�
 These binomial tail probabilities assume the cells are independent. The cells share held-out blocks across controls and conditions, so treat these probabilities as indicative. The counts themselves need no such assumption.
 
 ![Effect of each random control direction (abs_red, nats; positive means the bias magnitude shrank) with its 95% block-bootstrap CI, for 16 directions per control (marker shape and colour), per block. The black diamond is the learned source direction under the same condition (post hoc reference run). Panels in a column share a y-axis. For scale, the mean |bias| before any edit is 0.15–0.17 nats in all three models.](figures/fig_random_directions.pdf)
+
 **Integrity and reproducibility.** All 31 sweeps analysed here (1,488 direction records) pass the hardened gate with `--expect-files 16` and all three controls required, with no issues. Regenerating the 32 original orth and support-avoid directions from their seeds on the same machine, seven months after the legacy sweep, reproduced all 32 hashes. With the legacy cost targets pinned, it also reproduced every effect estimate exactly (maximum difference 0.0). Section 5.5 covers other hardware.
 
 **H1: the SEs are right on average.** Nine fixed directions (GPT-2 block 11, seeds 1–3 × 3 controls) were each re-evaluated on 16 held-out splits, where their true effect is constant. Per-direction Q/df ranged from 0.41 to 1.50, with pooled Q/df = 1.046, inside the 95% band for calibrated SEs. The block-bootstrap SEs therefore have the right scale. As shown above, however, a χ² reference on top of them is too light-tailed.
@@ -289,40 +295,41 @@ These binomial tail probabilities assume the cells are independent. The cells sh
 
 | condition | model | block | source effect [95% CI] | % of baseline \|bias\| | random \|effect\|: median / 90th pct | random directions with \|effect\| ≥ source | empirical p |
 |---|---|---|---|---|---|---|---|
-| P1 | GPT−2 | 1 | −0.0032 [−0.0080, +0.0010] | −2.1% | 0.0008 / 0.0040 | 10/48 | 0.22 |
-| P1 | GPT−2 | 6 | +0.0022 [+0.0007, +0.0038] | +1.5% | 0.0011 / 0.0032 | 9/48 | 0.20 |
-| P1 | GPT−2 | 11 | +0.0032 [+0.0012, +0.0052] | +2.1% | 0.0006 / 0.0030 | 5/48 | 0.12 |
-| P1 | Qwen3−0.6B | 1 | +0.0016 [−0.0048, +0.0073] | +0.9% | 0.0014 / 0.0046 | 19/48 | 0.41 |
-| P1 | Qwen3−0.6B | 14 | −0.0001 [−0.0010, +0.0010] | −0.0% | 0.0008 / 0.0027 | 45/48 | 0.94 |
-| P1 | Qwen3−0.6B | 26 | +0.0023 [+0.0014, +0.0032] | +1.3% | 0.0009 / 0.0029 | 8/48 | 0.18 |
-| P1 | Llama−3.2−1B | 1 | +0.0038 [+0.0015, +0.0066] | +2.4% | 0.0006 / 0.0015 | 0/48 | 0.02 |
-| P1 | Llama−3.2−1B | 8 | +0.0091 [+0.0015, +0.0175] | +5.7% | 0.0003 / 0.0008 | 0/48 | 0.02 |
-| P1 | Llama−3.2−1B | 14 | +0.0065 [+0.0037, +0.0093] | +4.0% | 0.0004 / 0.0008 | 0/48 | 0.02 |
-| KL | GPT−2 | 1 | +0.0098 [−0.0074, +0.0283] | +6.4% | 0.0109 / 0.0362 | 27/48 | 0.57 |
-| KL | GPT−2 | 6 | +0.0260 [+0.0141, +0.0392] | +16.9% | 0.0042 / 0.0108 | 0/48 | 0.02 |
-| KL | GPT−2 | 11 | +0.0184 [+0.0060, +0.0305] | +12.0% | 0.0031 / 0.0088 | 0/48 | 0.02 |
-| KL | Qwen3−0.6B | 1 | −0.0055 [−0.0239, +0.0130] | −3.2% | 0.0127 / 0.0329 | 40/48 | 0.84 |
-| KL | Qwen3−0.6B | 14 | −0.0119 [−0.0333, +0.0069] | −6.9% | 0.0031 / 0.0186 | 11/48 | 0.24 |
-| KL | Qwen3−0.6B | 26 | +0.0168 [+0.0102, +0.0241] | +9.7% | 0.0043 / 0.0166 | 5/48 | 0.12 |
-| KL | Llama−3.2−1B | 1 | −0.0538 [−0.1003, −0.0102] | −33.3% | 0.0044 / 0.0138 | 0/48 | 0.02 |
-| KL | Llama−3.2−1B | 8 | +0.0412 [+0.0022, +0.0825] | +25.5% | 0.0030 / 0.0094 | 0/48 | 0.02 |
-| KL | Llama−3.2−1B | 14 | +0.0496 [+0.0219, +0.0799] | +30.7% | 0.0045 / 0.0127 | 0/48 | 0.02 |
-| ADD−N | GPT−2 | 1 | +0.0063 [+0.0014, +0.0118] | +4.1% | 0.0029 / 0.0061 | 3/48 | 0.08 |
-| ADD−N | GPT−2 | 6 | +0.0000 [−0.0015, +0.0015] | +0.0% | 0.0016 / 0.0036 | 48/48 | 1.00 |
-| ADD−N | GPT−2 | 11 | +0.0004 [−0.0006, +0.0012] | +0.2% | 0.0005 / 0.0012 | 28/48 | 0.59 |
-| ADD−N | Qwen3−0.6B | 1 | −0.0005 [−0.0031, +0.0022] | −0.3% | 0.0014 / 0.0028 | 43/48 | 0.90 |
-| ADD−N | Qwen3−0.6B | 14 | +0.0001 [−0.0037, +0.0046] | +0.1% | 0.0022 / 0.0045 | 48/48 | 1.00 |
-| ADD−N | Qwen3−0.6B | 26 | +0.0004 [−0.0001, +0.0010] | +0.2% | 0.0007 / 0.0013 | 38/48 | 0.80 |
-| ADD−KL | GPT−2 | 1 | +0.0396 [+0.0114, +0.0736] | +25.8% | 0.0191 / 0.0344 | 0/48 | 0.02 |
-| ADD−KL | GPT−2 | 6 | +0.0054 [−0.0032, +0.0142] | +3.5% | 0.0079 / 0.0209 | 33/48 | 0.69 |
-| ADD−KL | GPT−2 | 11 | +0.0028 [−0.0028, +0.0082] | +1.8% | 0.0034 / 0.0097 | 27/48 | 0.57 |
-| ADD−KL | Qwen3−0.6B | 1 | −0.0076 [−0.0231, +0.0084] | −4.4% | 0.0102 / 0.0269 | 31/48 | 0.65 |
-| ADD−KL | Qwen3−0.6B | 14 | −0.0104 [−0.0290, +0.0089] | −6.0% | 0.0083 / 0.0215 | 20/48 | 0.43 |
-| ADD−KL | Qwen3−0.6B | 26 | +0.0089 [+0.0055, +0.0123] | +5.1% | 0.0064 / 0.0134 | 20/48 | 0.43 |
+| P1 | GPT-2 | 1 | −0.0032 [−0.0080, +0.0010] | −2.1% | 0.0008 / 0.0040 | 10/48 | 0.22 |
+| P1 | GPT-2 | 6 | +0.0022 [+0.0007, +0.0038] | +1.5% | 0.0011 / 0.0032 | 9/48 | 0.20 |
+| P1 | GPT-2 | 11 | +0.0032 [+0.0012, +0.0052] | +2.1% | 0.0006 / 0.0030 | 5/48 | 0.12 |
+| P1 | Qwen3-0.6B | 1 | +0.0016 [−0.0048, +0.0073] | +0.9% | 0.0014 / 0.0046 | 19/48 | 0.41 |
+| P1 | Qwen3-0.6B | 14 | −0.0001 [−0.0010, +0.0010] | −0.0% | 0.0008 / 0.0027 | 45/48 | 0.94 |
+| P1 | Qwen3-0.6B | 26 | +0.0023 [+0.0014, +0.0032] | +1.3% | 0.0009 / 0.0029 | 8/48 | 0.18 |
+| P1 | Llama-3.2-1B | 1 | +0.0038 [+0.0015, +0.0066] | +2.4% | 0.0006 / 0.0015 | 0/48 | 0.02 |
+| P1 | Llama-3.2-1B | 8 | +0.0091 [+0.0015, +0.0175] | +5.7% | 0.0003 / 0.0008 | 0/48 | 0.02 |
+| P1 | Llama-3.2-1B | 14 | +0.0065 [+0.0037, +0.0093] | +4.0% | 0.0004 / 0.0008 | 0/48 | 0.02 |
+| KL | GPT-2 | 1 | +0.0098 [−0.0074, +0.0283] | +6.4% | 0.0109 / 0.0362 | 27/48 | 0.57 |
+| KL | GPT-2 | 6 | +0.0260 [+0.0141, +0.0392] | +16.9% | 0.0042 / 0.0108 | 0/48 | 0.02 |
+| KL | GPT-2 | 11 | +0.0184 [+0.0060, +0.0305] | +12.0% | 0.0031 / 0.0088 | 0/48 | 0.02 |
+| KL | Qwen3-0.6B | 1 | −0.0055 [−0.0239, +0.0130] | −3.2% | 0.0127 / 0.0329 | 40/48 | 0.84 |
+| KL | Qwen3-0.6B | 14 | −0.0119 [−0.0333, +0.0069] | −6.9% | 0.0031 / 0.0186 | 11/48 | 0.24 |
+| KL | Qwen3-0.6B | 26 | +0.0168 [+0.0102, +0.0241] | +9.7% | 0.0043 / 0.0166 | 5/48 | 0.12 |
+| KL | Llama-3.2-1B | 1 | −0.0538 [−0.1003, −0.0102] | −33.3% | 0.0044 / 0.0138 | 0/48 | 0.02 |
+| KL | Llama-3.2-1B | 8 | +0.0412 [+0.0022, +0.0825] | +25.5% | 0.0030 / 0.0094 | 0/48 | 0.02 |
+| KL | Llama-3.2-1B | 14 | +0.0496 [+0.0219, +0.0799] | +30.7% | 0.0045 / 0.0127 | 0/48 | 0.02 |
+| ADD-N | GPT-2 | 1 | +0.0063 [+0.0014, +0.0118] | +4.1% | 0.0029 / 0.0061 | 3/48 | 0.08 |
+| ADD-N | GPT-2 | 6 | +0.0000 [−0.0015, +0.0015] | +0.0% | 0.0016 / 0.0036 | 48/48 | 1.00 |
+| ADD-N | GPT-2 | 11 | +0.0004 [−0.0006, +0.0012] | +0.2% | 0.0005 / 0.0012 | 28/48 | 0.59 |
+| ADD-N | Qwen3-0.6B | 1 | −0.0005 [−0.0031, +0.0022] | −0.3% | 0.0014 / 0.0028 | 43/48 | 0.90 |
+| ADD-N | Qwen3-0.6B | 14 | +0.0001 [−0.0037, +0.0046] | +0.1% | 0.0022 / 0.0045 | 48/48 | 1.00 |
+| ADD-N | Qwen3-0.6B | 26 | +0.0004 [−0.0001, +0.0010] | +0.2% | 0.0007 / 0.0013 | 38/48 | 0.80 |
+| ADD-KL | GPT-2 | 1 | +0.0396 [+0.0114, +0.0736] | +25.8% | 0.0191 / 0.0344 | 0/48 | 0.02 |
+| ADD-KL | GPT-2 | 6 | +0.0054 [−0.0032, +0.0142] | +3.5% | 0.0079 / 0.0209 | 33/48 | 0.69 |
+| ADD-KL | GPT-2 | 11 | +0.0028 [−0.0028, +0.0082] | +1.8% | 0.0034 / 0.0097 | 27/48 | 0.57 |
+| ADD-KL | Qwen3-0.6B | 1 | −0.0076 [−0.0231, +0.0084] | −4.4% | 0.0102 / 0.0269 | 31/48 | 0.65 |
+| ADD-KL | Qwen3-0.6B | 14 | −0.0104 [−0.0290, +0.0089] | −6.0% | 0.0083 / 0.0215 | 20/48 | 0.43 |
+| ADD-KL | Qwen3-0.6B | 26 | +0.0089 [+0.0055, +0.0123] | +5.1% | 0.0064 / 0.0134 | 20/48 | 0.43 |
 
 **H4: propagation does not explain it.** A(v) barely varies across random directions (coefficient of variation 7% at block 1, 15% at block 6), and it does not predict |effect| under P1 (Spearman ρ = −0.20, one-sided p = 0.91 at block 1; ρ = +0.14, p = 0.17 at block 6). Lens provenance: corpus sha256 `7e0015e0…`, lens sha256 `b2d317b7…`.
 
 **Exploratory.**
+
 - *Control type does not matter.* Under KL, paired sign-flip tests between every pair of controls, on the signed and absolute effect, in all 9 model × block cells (54 tests) give 2 with p < 0.05, against about 2.7 expected by chance. Under ADD-N and ADD-KL the same 36 tests give 1 and 2 hits, again at chance. Avoiding the source's support, or confining a direction to a random third of the coordinates, leaves its effect indistinguishable from an unconstrained random direction.
 - *What predicts a direction's effect.* Per block, we correlated 4 direction features (logit-lens gender readout, activation gender contrast, projection size, α) with the signed and absolute effect. The only feature motivated in advance was projection size, `proj_rms` = sqrt(E[(h·v)²]) at the edited positions, i.e. how much activation the edit removes. It correlates positively with |effect| under P1 at all three GPT-2 blocks: ρ = +0.32 (p = 0.026), +0.47 (p = 0.001) and +0.35 (p = 0.016). Only block 6 survives Bonferroni across the 24 pooled absolute-effect tests, and no other feature is consistent. Together with H4, this suggests a random direction's effect depends on how much activation lies along it, not on how far it propagates. That is a hypothesis, not a result.
 - *Secondary: PLL-matched at GPT-2 block 11.* All three controls are heterogeneous here too (calibrated p = 0.007–0.022), and no pair of controls differs (sign-flip p = 0.13–0.99; τ ratios 0.88–0.94, CIs about 0.4–2.0). Reaching the same PLL cost takes random-mask about twice orth's α. Note that `abs_cos_to_source`, the cosine between |v| and |source|, drops from about 0.62 to 0.09 for support-avoid *by construction*: it checks that the construction worked, not a finding.
@@ -335,7 +342,7 @@ These binomial tail probabilities assume the cells are independent. The cells sh
 
 ## Compute hosts and cross-host reproducibility
 
-Most runs used one desktop: an AMD Radeon RX 7800 XT with ROCm 7.2 and torch 2.9.1, in float32. The Qwen3-0.6B KL-matched cells at block 14 seeds 8–16 and at blocks 1 and 26, and all additive runs, ran on a second machine: an NVIDIA RTX 5080 Laptop GPU under WSL2 with CUDA 13.0 and torch 2.14.1, also float32, with transformers and the other libraries pinned to the same versions. The code, configs, source directions and model weights were transferred as checksummed archives and verified by hash on arrival. **Cross-host check.** One finished desktop seed (Qwen block 14, seed 1, all 3 controls) was re-run from scratch on the second host. The results agree to numerical precision. Matched α was identical to the 4th decimal (12.0587, 12.7819, 16.4459), achieved KL to the 5th, and effect estimates differed by at most 1.2·10⁻⁶ against SEs of about 10⁻². The direction hashes did *not* match, however. Both hosts run NumPy 2.4.2 with the same OpenBLAS build, which dispatches different kernels on the two CPUs (AMD Ryzen 9 7900X vs Intel Core Ultra 9 275HX). The resulting float32 vectors differ in 8–354 of 1,024 entries, by at most 12 ULP (≤ 1.5·10⁻⁸), with cosine 1.0. Regenerating a direction on the same host reproduced every hash, even seven months later (§5.4). Regenerating it on different hardware cannot. This is the silent-regeneration threat of §3.1 occurring for real, and the semantic-hash check flagged it. The vectors the protocol pins are therefore the stored ones, and a regenerated vector must never be substituted. Each laptop-run cell's directions were generated, hashed and stored on the laptop, and each result is checked against its own stored vectors.
+Most runs used one desktop: an AMD Radeon RX 7800 XT with ROCm 7.2 and torch 2.9.1, in float32. The Qwen3-0.6B KL-matched cells at block 14 seeds 8–16 and at blocks 1 and 26, all additive runs, and all Llama runs, ran on a second machine: an NVIDIA RTX 5080 Laptop GPU under WSL2 with CUDA 13.0 and torch 2.14.1, also float32, with transformers and the other libraries pinned to the same versions. The code, configs, source directions and model weights were transferred as checksummed archives and verified by hash on arrival. **Cross-host check.** One finished desktop seed (Qwen block 14, seed 1, all 3 controls) was re-run from scratch on the second host. The results agree to numerical precision. Matched α was identical to the 4th decimal (12.0587, 12.7819, 16.4459), achieved KL to the 5th, and effect estimates differed by at most 1.2·10⁻⁶ against SEs of about 10⁻². The direction hashes did *not* match, however. Both hosts run NumPy 2.4.2 with the same OpenBLAS build, which dispatches different kernels on the two CPUs (AMD Ryzen 9 7900X vs Intel Core Ultra 9 275HX). The resulting float32 vectors differ in 8–354 of 1,024 entries, by at most 12 ULP (≤ 1.5·10⁻⁸), with cosine 1.0. Regenerating a direction on the same host reproduced every hash, even seven months later (§5.4). Regenerating it on different hardware cannot. This is the silent-regeneration threat of §3.1 occurring for real, and the semantic-hash check flagged it. The vectors the protocol pins are therefore the stored ones, and a regenerated vector must never be substituted. Each laptop-run cell's directions were generated, hashed and stored on the laptop, and each result is checked against its own stored vectors.
 
 # Discussion
 
@@ -389,8 +396,8 @@ Dependencies are frozen in `requirements-lock.txt`. Run summaries embed `runtime
 
 # References {-}
 
-- Anthropic (2026). jacobian-lens: companion code for the global workspace paper. Software, https://github.com/anthropics/jacobian-lens, commit `581d398`.
-- Anthropic (2026). Verbalizable representations form a global workspace in language models. *Transformer Circuits Thread*. https://transformer-circuits.pub/2026/workspace/
+- Anthropic (2026). jacobian-lens: companion code for the global workspace paper. Software, <https://github.com/anthropics/jacobian-lens>, commit `581d398`.
+- Anthropic (2026). Verbalizable representations form a global workspace in language models. *Transformer Circuits Thread*. <https://transformer-circuits.pub/2026/workspace/>
 - Belrose, N., Schneider-Joseph, D., Ravfogel, S., Cotterell, R., Raff, E., & Biderman, S. (2023). LEACE: Perfect linear concept erasure in closed form. *NeurIPS*.
 - Bolukbasi, T., Chang, K.-W., Zou, J., Saligrama, V., & Kalai, A. (2016). Man is to computer programmer as woman is to homemaker? Debiasing word embeddings. *NeurIPS*.
 - Cochran, W. G. (1954). The combination of estimates from different experiments. *Biometrics*, 10(1).
@@ -405,6 +412,6 @@ Dependencies are frozen in `requirements-lock.txt`. Run summaries embed `runtime
 - Radford, A., Wu, J., Child, R., Luan, D., Amodei, D., & Sutskever, I. (2019). Language models are unsupervised multitask learners. OpenAI.
 - Ravfogel, S., Elazar, Y., Gonen, H., Twiton, M., & Goldberg, Y. (2020). Null it out: Guarding protected attributes by iterative nullspace projection. *ACL*.
 - Turner, A. M., Thiergart, L., Udell, D., Leech, G., Mini, U., & MacDiarmid, M. (2023). Activation addition: Steering language models without optimization. arXiv:2308.10248.
-- Weidmann, P. E., et al. (2025–2026). heretic. Software, https://github.com/p-e-w/heretic, commit `3521f86`.
+- Weidmann, P. E., et al. (2025–2026). heretic. Software, <https://github.com/p-e-w/heretic>, commit `3521f86`.
 - Yang, A., et al. (2025). Qwen3 technical report. arXiv:2505.09388.
 - Zou, A., et al. (2023). Representation engineering: A top-down approach to AI transparency. arXiv:2310.01405.

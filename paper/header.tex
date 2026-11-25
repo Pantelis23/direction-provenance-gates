@@ -1,18 +1,38 @@
 
-\usepackage[margin=1in]{geometry}
-\usepackage{fontspec}
-\setmainfont{DejaVu Serif}[Scale=0.92]
-\setsansfont{DejaVu Sans}[Scale=0.92]
-\setmonofont{DejaVu Sans Mono}[Scale=0.80]
+\usepackage[margin=0.95in]{geometry}
+\ifPDFTeX
+  \usepackage{newtxtext,newtxmath}
+\else
+  \setmainfont{texgyretermes-regular.otf}[
+    BoldFont=texgyretermes-bold.otf,
+    ItalicFont=texgyretermes-italic.otf,
+    BoldItalicFont=texgyretermes-bolditalic.otf]
+  \setsansfont{texgyreheros-regular.otf}[
+    Scale=0.92,
+    BoldFont=texgyreheros-bold.otf,
+    ItalicFont=texgyreheros-italic.otf,
+    BoldItalicFont=texgyreheros-bolditalic.otf]
+  \setmonofont{lmmono10-regular.otf}[
+    Scale=0.88,
+    ItalicFont=lmmono10-italic.otf,
+    BoldFont=lmmonolt10-bold.otf]
+  \setmathfont{texgyretermes-math.otf}
+\fi
 \usepackage{etoolbox}
-\AtBeginEnvironment{longtable}{\scriptsize\setlength{\tabcolsep}{3pt}}
+\AtBeginEnvironment{longtable}{\footnotesize\setlength{\tabcolsep}{4pt}\renewcommand{\arraystretch}{1.12}}
 \usepackage{fvextra}
 \DefineVerbatimEnvironment{Highlighting}{Verbatim}{breaklines,breakanywhere,commandchars=\\\{\},fontsize=\scriptsize}
 \fvset{breaklines,breakanywhere,fontsize=\scriptsize}
 \usepackage{xurl}
 \usepackage[htt]{hyphenat}
 \usepackage{float}
-\floatplacement{figure}{htbp}
+\floatplacement{figure}{htb!}
+\renewcommand{\topfraction}{0.92}
+\renewcommand{\bottomfraction}{0.85}
+\renewcommand{\textfraction}{0.07}
+\renewcommand{\floatpagefraction}{0.85}
+\widowpenalty=10000
+\clubpenalty=10000
 \setlength{\emergencystretch}{3em}
 \usepackage{caption}
 \captionsetup{font=small,labelfont=bf}
