@@ -6,7 +6,7 @@ Code, pre-registration and pinned ledgers: https://github.com/Pantelis23/directi
 
 ## Abstract
 
-Claims about activation interventions are claims about specific direction vectors and about the random directions used as controls. We test both. First, we give a small provenance protocol that stores each direction as a hashed, hermetically copied artifact, and evaluate it by injecting 13 realistic faults into a real experiment. A hardened self-contained integrity gate catches 12 (the original caught 6). The 13th, a run silently redone end to end, is caught only by a hash ledger pinned outside the run, in git. A common regenerate-then-verify CI step catches 2. Second, in a pre-registered study on GPT-2 and Qwen3-0.6B (3 blocks each, 16 random directions per control and condition), random directions are not null controls. Even a plain unit projection has direction-specific effects on a gender-bias metric in 15 of 18 cells, and when every edit is matched to the same general-text KL budget, all 18 cells are heterogeneous (17 at the pre-registered Bonferroni level). The same holds for additive edits, even ones that move general-text KL by only about 0.001–0.006 (17/18 cells). Support-avoiding and subspace-matched random directions behave no differently from unconstrained ones, and Jacobian-lens propagation does not predict which directions matter. Finally, regenerating directions reproduced every hash on the same machine seven months later, but not on different hardware, where vectors shifted by a few float32 ULPs while results agreed to 10⁻⁶. Stored vectors, not regenerated ones, are what should be pinned.
+Claims about activation interventions are claims about specific direction vectors, and about the random directions used as their controls. We test both. First, we give a small provenance protocol that stores each direction as a hashed, hermetically copied artifact, and evaluate it by injecting 13 realistic faults into a real experiment. A hardened self-contained integrity gate catches 12 (the original caught 6). The 13th, a run silently redone end to end, is caught only by a hash ledger pinned outside the run. A common regenerate-then-verify CI step catches 2. Second, in a pre-registered study on GPT-2, Qwen3-0.6B and Llama-3.2-1B (three blocks each, 16 random directions per control and condition), random directions are not reliably null controls. With a heterogeneity test we calibrated on the real data (the pre-registered χ² test proved anticonservative, rejecting true nulls 17–23% of the time), random edits matched to a fixed general-text KL budget are heterogeneous in 23 of 27 cells, and additive edits in 27 of 36. Plain unit projections are null at the first block of every model but heterogeneous deeper in (14 of 27 cells overall). Support-avoiding and subspace-matched random directions behave like unconstrained ones, and Jacobian-lens propagation does not predict which directions matter. Finally, regenerating directions reproduced every hash on the same machine seven months later, but not on different hardware, where vectors shifted by a few float32 ULPs while results agreed to 10⁻⁶. Stored vectors, not regenerated ones, are what should be pinned.
 
 ## 1. Introduction
 
@@ -18,7 +18,7 @@ This paper makes three contributions. All code, the pre-registration with its da
 
 1. **A provenance contract for direction vectors** (Section 3): canonical float32 unit vectors, a semantic hash of the payload, hermetic copies inside each run's output, and a ledger of hashes pinned in version control.
 2. **A fault-injection evaluation of the gates** (Section 4): 13 injected faults, showing what a self-contained integrity gate can and cannot catch, and that a common CI pattern (regenerate the manifest, then verify it) catches almost nothing.
-3. **A pre-registered test of the random-direction control** (Section 5): in GPT-2 and Qwen3-0.6B at three depths each, comparing a unit projection with edits matched to a fixed general-text KL budget, with every vector run through the gates of Section 3. Random directions turn out not to be null, and the reason is not how far they propagate.
+3. **A pre-registered test of the random-direction control** (Section 5): in GPT-2, Qwen3-0.6B and Llama-3.2-1B at three depths each, with removal and additive edits, size-matched by norm or by a fixed general-text KL budget, and with every vector run through the gates of Section 3. Random directions turn out not to be reliably null except as small edits at the first block. Along the way we found that the standard χ² heterogeneity test is anticonservative in this design, and we replaced it with a calibrated joint block bootstrap.
 
 ## 2. Related work
 
@@ -103,7 +103,7 @@ The pinned ledger catches everything here, but only relative to the moment it wa
 
 ## 5. Are random control directions null?
 
-Random directions are the default control for directional interventions: if a learned direction d changes behaviour and a random direction "of the same size" does not, the effect is attributed to d. We test that premise in two models, at three depths each, under three ways of making a random edit "the same size". The hypotheses and decision rules were pre-registered before the runs they concern: `docs/prereg_2026-09-28.md`, committed at `dfb4e33`, with the Qwen addendum at `d490967`, the KL-matched addendum at `1597fa6`, and the additive-steering addendum at `b8b1c63`. Every vector reported here passed the gates of Section 3.
+Random directions are the default control for directional interventions: if a learned direction d changes behaviour and a random direction "of the same size" does not, the effect is attributed to d. We test that premise in three models, at three depths each, under three ways of making a random edit "the same size". The hypotheses and decision rules were pre-registered before the runs they concern: `docs/prereg_2026-09-28.md`, committed at `dfb4e33`, with the Qwen addendum at `d490967`, the KL-matched addendum at `1597fa6`, the additive-steering addendum at `b8b1c63`, and the Llama addendum at `6bf51bf`. The joint block-bootstrap test of §5.3 and the effect-size reference runs are post hoc and are labelled as such. Every vector reported here passed the gates of Section 3.
 
 ### 5.1 Setup
 
@@ -120,7 +120,7 @@ Random directions are the default control for directional interventions: if a le
 - `support-avoid`: Gaussian random on the coordinates *outside* the source's top-512 |coordinates|, orthogonalised to the source. In GPT-2 that leaves 256 of 768 coordinates.
 - `random-mask`: the same construction with 512 coordinates masked uniformly at random. It matches support-avoid's dimensionality but not its avoidance.
 
-**Models and blocks.** GPT-2 small (12 blocks, d = 768) at blocks 1, 6 and 11. Qwen3-0.6B (28 blocks, d = 1024, float32, weights sha256 `f47f7117…`) at blocks 1, 14 and 26.
+**Models and blocks.** GPT-2 small (Radford et al., 2019; 12 blocks, d = 768) at blocks 1, 6 and 11. Qwen3-0.6B (Yang et al., 2025; 28 blocks, d = 1024, weights sha256 `f47f7117…`) at blocks 1, 14 and 26. Llama-3.2-1B-Instruct (Grattafiori et al., 2024; 16 blocks, d = 2048, via the mirror `unsloth/Llama-3.2-1B-Instruct` @ `5a8abab4`, weights sha256 `1ff795ff…`) at blocks 1, 8 and 14. All run in float32. Llama prepends a beginning-of-text token, so its sentence scores also include predicting the name. The edit never touches that position, and the baseline adjustment largely cancels the name prior, but absolute bias levels are not strictly comparable across models.
 
 **A disclosed flaw.** In Hugging Face models the last entry of `hidden_states` has the final normalisation applied. The original GPT-2 block-11 source direction was learned on that post-`ln_f` state but is applied to the pre-`ln_f` block output, where `ln_f`'s per-coordinate gain ranges from 0.004 to 17.4. At block 11, "orthogonal to the source" and "the source's top-512 support" are therefore defined in the wrong space. This does not affect whether random directions are null, but it weakens any support-avoid interpretation there. All other source directions are learned and applied in the same space, which is why Qwen uses block 26 rather than its last block, 27.
 
@@ -130,7 +130,7 @@ Random directions are the default control for directional interventions: if a le
 - **KL-matched (KL), the primary matched condition.** α is calibrated per direction so that the edit costs exactly the same general-language damage everywhere: mean next-token KL(original ‖ edited) = 0.10 nats per position (±5%), over every position of 100 WikiText-103 test paragraphs with the edit applied at all positions. The target is the same for every model, block, seed and control. It was chosen from a cost-only pilot on seeds 101–102, before any effect was measured (addendum B). The KL-to-original criterion follows heretic (p-e-w/heretic @ `3521f86`), which scores only the first generated token. The corpus is disjoint from the bias sentences, and KL is zero only for a no-op edit.
 - **PLL-matched (MC), pre-registered but flawed, secondary.** α is calibrated so that the drop in log-probability of the bias sentences themselves matches a per-seed target. Two flaws surfaced (addendum B). This cost counts only log-prob *drops*, so on 3 of 16 seeds at GPT-2 blocks 1 and 6 the target fell below the matching tolerance and α = 0 counted as "matched" (15 vacuous matches in all). Targets also vary 10–60× across seeds, which confounds across-direction spread with seed-level cost (|effect| vs target: ρ = +0.43, p = 0.007 at block 1). We report MC only at GPT-2 block 11, where legacy targets left no vacuous matches. The Qwen MC run was stopped after 4 seeds.
 
-Matched α values are well above 1 (KL: 0.7–16.5; MC at block 11: 1.05–29.8), so matched edits reverse and amplify the component along v rather than removing it.
+Matched α values are well above 1 (KL: 0.7–24.0; MC at block 11: 1.05–29.8), so matched edits reverse and amplify the component along v rather than removing it.
 
 **Additive edits** (addendum C). Projections *remove* a component; steering and the J-space controls mostly *add* one. With the same random directions, we therefore also ran h ← h + α v:
 - **ADD-N (matched displacement):** one fixed α per block, equal to the pilot median of E|h·v| on WikiText. That is the typical displacement a unit projection makes along a random direction, so ADD-N is P1's additive twin. It is a gentle edit: KL is about 0.001–0.006 nats per position, interpolated from the pilot's α grid.
@@ -138,147 +138,175 @@ Matched α values are well above 1 (KL: 0.7–16.5; MC at block 11: 1.05–29.8)
 
 ### 5.3 Statistics
 
-Per control and condition: the mean effect over the 16 directions with a seed-bootstrap CI; Cochran's Q across directions, using each direction's block-bootstrap SE, with a Monte Carlo p-value (floor 5·10⁻⁶) under the null that all directions share one effect; and the DerSimonian–Laird between-direction SD τ. Between controls: paired sign-flip permutation tests and seed-bootstrap CIs for τ ratios (`scripts/analyze_mc_controls.py`). Q is only as good as the SEs, so H1 checks them directly.
+Per control and condition we report the mean effect over the 16 directions, the mean |effect|, Cochran's Q (with each direction's block-level SE) and the DerSimonian–Laird between-direction SD τ. Between controls we use paired sign-flip permutation tests (`scripts/analyze_mc_controls.py`).
 
-For GPT-2 blocks 1 and 6 we also fit a Jacobian lens (anthropics/jacobian-lens @ `581d398`) on 300 WikiText-103 paragraphs of up to 128 tokens. J_ℓ is the average Jacobian of the final residual with respect to the block-ℓ residual. For a unit direction v, A(v) = ‖J_ℓ v‖ measures how strongly a perturbation along v propagates to the output. At GPT-2 block 11 nothing lies between the edit and `ln_f`, so the lens reduces to the logit lens and A(v) carries no information.
+**Which test of heterogeneity.** The pre-registered test compared Cochran's Q with its normal-theory null, which is a χ² distribution with 15 degrees of freedom. Two features of this design threaten that null. First, all 16 directions are evaluated on the *same* held-out split, so their errors can covary. Second, each direction's SE is estimated from only 26 held-out blocks, whose block means are heavy-tailed. H1 checks that the SEs are right *on average*; it says nothing about either issue. We therefore added, post hoc, a **joint block bootstrap** of Q (`scripts/joint_block_test.py`). Each direction is recentred to its own mean, the 26 blocks are resampled *jointly* for all 16 directions (one shared draw per resample, so any cross-direction covariance from the shared split is reproduced), and Q is recomputed with its SEs re-estimated inside each resample (20,000 resamples). We then checked both tests on synthetic null data, by resampling four real cells' recentred block data, which keeps the real covariance and tails (`scripts/calibrate_homogeneity_tests.py`, 300 null datasets per cell):
+
+| cell (orth control) | χ²-Q false-rejection rate at α = 0.05 | joint-bootstrap Q |
+|---|---|---|
+| gpt2 P1 L6 | 0.23 | 0.030 |
+| gpt2 KL L1 | 0.17 | 0.067 |
+| qwen P1 L26 | 0.20 | 0.037 |
+| gpt2 MC L11 | 0.18 | 0.043 |
+
+The pre-registered χ² test is **anticonservative**: it rejects a true null 17–23% of the time instead of 5%. The joint bootstrap is calibrated (3–7%). The mean cross-direction correlation of the recentred block data is close to zero in almost every cell (|r̄| ≤ 0.15 in 81 of 93 cells, with a maximum of 0.54), so the shared split itself contributes little. The miscalibration comes from the χ² tail with SEs estimated from 26 heavy-tailed blocks. **All p-values below are from the calibrated joint bootstrap.** The pre-registered χ² p-values are listed alongside for transparency, and the hypothesis table reports both verdicts.
+
+**Jacobian-lens propagation (H4).** For GPT-2 blocks 1 and 6 we fit a Jacobian lens (anthropics/jacobian-lens @ `581d398`) on 300 WikiText-103 paragraphs (Merity et al., 2017) of up to 128 tokens. J_ℓ is the average Jacobian of the final residual with respect to the block-ℓ residual. For a unit direction v, A(v) = ‖J_ℓ v‖ measures how strongly a perturbation along v propagates to the output. At GPT-2 block 11 nothing lies between the edit and `ln_f`, so the lens reduces to the logit lens and A(v) carries no information.
 
 ### 5.4 Results
 
-| hypothesis | prediction | outcome |
-|---|---|---|
-| H1 | block-bootstrap SEs are calibrated (pooled Q/df within its null band) | **held**: 1.046, band 0.775–1.253 |
-| H3, part 1 | under P1, most cells at early/middle blocks show no heterogeneity | **failed**: GPT-2 0/6 null; Qwen 3/6 null (4 needed) |
-| H2-KL | under KL, all 18 cells heterogeneous at p < 0.05/18 | **failed narrowly**: 17/18 (the 18th at p = 0.0049) |
-| H3-KL | τ(KL) > τ(P1) in a majority of the 18 cells | **held**: 18/18 |
-| H4 | J-lens propagation A(v) predicts \|effect\| under P1 (ρ > 0) | **failed**: ρ = −0.20 (block 1), +0.14 (block 6) |
-| H5 | Qwen3-0.6B replicates H2 and H3 | split into the per-model rows above (Qwen's cells are counted in H3, H2-KL and H3-KL). Its PLL-matched part was superseded with MC by addendum B. |
-| H6 | ADD-N (P1-sized additive edits) is null in a majority of the 18 cells | **failed**: 17/18 heterogeneous at p < 0.05 |
-| H7 | ADD-KL heterogeneous at p < 0.05/18 in all 18 cells | **failed narrowly**: 15/18 (all 18 at p < 0.05) |
+| hypothesis | prediction | pre-registered test (χ²-Q) | calibrated re-analysis (joint bootstrap) |
+|---|---|---|---|
+| H1 | block-bootstrap SEs are calibrated on average (pooled Q/df within its null band) | **held**: 1.046, band 0.775–1.253 | not affected (H1 is about SE scale; tails are checked above) |
+| H3, part 1 | under P1, a majority of cells at early/middle blocks show no heterogeneity | **failed**: GPT-2 0/6 null, Qwen 3/6 | **failed narrowly**: GPT-2 3/6 null, Qwen 3/6 (4 needed) |
+| H2-KL | under KL, every cell heterogeneous at the Bonferroni level | **failed narrowly**: 17/18 (25/27 with Llama) | **failed**: 1/27 at Bonferroni; 23/27 at p < 0.05 |
+| H3-KL | τ(KL) > τ(P1) in a majority of cells | **held**: 18/18 | **held**: 27/27, Llama included (τ is an estimate, not a test) |
+| H4 | J-lens propagation A(v) predicts \|effect\| under P1 (ρ > 0) | **failed**: ρ = −0.20 (block 1), +0.14 (block 6) | unchanged |
+| H5 | Qwen3-0.6B replicates H2 and H3 | split into the rows above; its PLL-matched part was superseded with MC by addendum B | (as above) |
+| H6 | ADD-N (P1-sized additive edits) is null in a majority of cells | **failed**: 17/18 heterogeneous | **failed**: 14/18 heterogeneous |
+| H7 | ADD-KL heterogeneous at the Bonferroni level in every cell | **failed narrowly**: 15/18 | **failed**: 6/18 at Bonferroni; 13/18 at p < 0.05 |
 
-**Integrity and reproducibility.** Fifteen sweeps of 48 records each (GPT-2: P1, KL and MC; Qwen: P1 and KL; three blocks each) pass the hardened gate with `--expect-files 16` and all three controls required: 720 records, none with an issue. Regenerating the 32 original orth and support-avoid directions from their seeds on the same machine, seven months after the legacy sweep, reproduced all 32 hashes. With the legacy cost targets pinned, it also reproduced every effect estimate exactly (maximum difference 0.0). Section 5.5 covers what happens on other hardware.
+**Pooled evidence.** No single prediction of "every cell past Bonferroni" survives calibration. Pooled across cells, though, the evidence that random directions are not null is overwhelming. If every cell were null, a calibrated test would flag each one with probability at most about 0.067 (the worst rate observed in the null calibration). The observed counts are far above that:
 
-**H1: the SEs are calibrated.** Nine fixed directions (GPT-2 block 11, seeds 1–3 × 3 controls) were each re-evaluated on 16 held-out splits, where their true effect is constant. Per-direction Q/df ranged from 0.41 to 1.50, with pooled Q/df = 1.046, inside the 95% band for calibrated SEs. So a fixed direction varies across splits about as much as its SE predicts, while *different* random directions differ by up to several times that (Q/df up to about 8 in the heterogeneous cells below). No correction is applied.
+| condition | cells heterogeneous at p < 0.05 (calibrated) | GPT-2 / Qwen / Llama | P(≥ count \| all null) |
+|---|---|---|---|
+| P1 (unit projection) | 14/27 | 5/9 / 6/9 / 3/9 | 3·10⁻¹⁰ |
+| KL-matched projection | 23/27 | 9/9 / 8/9 / 6/9 | 1·10⁻²³ |
+| ADD-N | 14/18 | 7/9 / 7/9 / — | 9·10⁻¹⁴ |
+| ADD-KL | 13/18 | 6/9 / 7/9 / — | 3·10⁻¹² |
 
-**Unit projection: random directions are not null.** Even a plain projection, with no amplification, shifts the bias metric by a real, direction-specific amount in all 9 GPT-2 cells (p ≤ 0.009) and in 6 of 9 Qwen cells. Qwen's three nulls are random-mask at block 14 and support-avoid and random-mask at block 1, so its early and middle blocks come closest to a null control. The effects are small, with mean |effect| of 0.0006–0.003 nats, but several times their SEs.
+These binomial tail probabilities assume the cells are independent. The cells share held-out blocks across controls and conditions, so treat these probabilities as indicative. The counts themselves need no such assumption.
 
-**GPT-2, unit projection (α = 1)**, 16 directions per cell:
+**Integrity and reproducibility.** All 31 sweeps analysed here (1,488 direction records) pass the hardened gate with `--expect-files 16` and all three controls required, with no issues. Regenerating the 32 original orth and support-avoid directions from their seeds on the same machine, seven months after the legacy sweep, reproduced all 32 hashes. With the legacy cost targets pinned, it also reproduced every effect estimate exactly (maximum difference 0.0). Section 5.5 covers other hardware.
 
-| block | control | mean effect | mean \|effect\| | median SE | τ | Q | p |
-|---|---|---|---|---|---|---|---|
-| 1 | orth | −0.0006 | 0.0013 | 0.0008 | 0.0008 | 38.4 | 0.0009 |
-| 1 | support-avoid | +0.0001 | 0.0007 | 0.0006 | 0.0006 | 30.8 | 0.0094 |
-| 1 | random-mask | −0.0011 | 0.0030 | 0.0013 | 0.0019 | 72.8 | < 10⁻⁵ |
-| 6 | orth | +0.0002 | 0.0012 | 0.0007 | 0.0010 | 56.3 | < 10⁻⁵ |
-| 6 | support-avoid | +0.0007 | 0.0019 | 0.0008 | 0.0014 | 101.4 | < 10⁻⁵ |
-| 6 | random-mask | +0.0002 | 0.0010 | 0.0005 | 0.0007 | 45.9 | 0.0001 |
-| 11 | orth | +0.0001 | 0.0012 | 0.0005 | 0.0008 | 70.9 | < 10⁻⁵ |
-| 11 | support-avoid | −0.0007 | 0.0016 | 0.0007 | 0.0010 | 82.5 | < 10⁻⁵ |
-| 11 | random-mask | +0.0001 | 0.0006 | 0.0004 | 0.0004 | 37.9 | 0.0009 |
+**H1: the SEs are right on average.** Nine fixed directions (GPT-2 block 11, seeds 1–3 × 3 controls) were each re-evaluated on 16 held-out splits, where their true effect is constant. Per-direction Q/df ranged from 0.41 to 1.50, with pooled Q/df = 1.046, inside the 95% band for calibrated SEs. The block-bootstrap SEs therefore have the right scale. As shown above, however, a χ² reference on top of them is too light-tailed.
 
-**Qwen3-0.6B, unit projection (α = 1)**:
+**Unit projection: null at the first block, not null later.** Under the calibrated test, a plain projection with no amplification is heterogeneous in 14 of 27 cells. The pattern is sharp: at the **first block of all three models only 1 of 9 cells** is heterogeneous, while at the middle and last blocks most are. At early layers, then, random unit projections behave like the null controls they are meant to be, matching the J-space matched-norm finding. Deeper in the network, individual random directions shift the bias metric by real, direction-specific amounts (mean |effect| 0.0003–0.003 nats).
 
-| block | control | mean effect | mean \|effect\| | median SE | τ | Q | p |
-|---|---|---|---|---|---|---|---|
-| 1 | orth | +0.0001 | 0.0026 | 0.0020 | 0.0021 | 41.8 | 0.0002 |
-| 1 | support-avoid | +0.0001 | 0.0022 | 0.0020 | 0.0008 | 18.0 | 0.2630 |
-| 1 | random-mask | +0.0001 | 0.0011 | 0.0017 | < 10⁻⁴ | 11.5 | 0.7178 |
-| 14 | orth | −0.0004 | 0.0013 | 0.0007 | 0.0011 | 52.3 | < 10⁻⁴ |
-| 14 | support-avoid | −0.0005 | 0.0014 | 0.0007 | 0.0011 | 53.5 | < 10⁻⁵ |
-| 14 | random-mask | −0.0001 | 0.0006 | 0.0007 | 0.0001 | 15.6 | 0.4082 |
-| 26 | orth | −0.0005 | 0.0011 | 0.0006 | 0.0007 | 49.5 | < 10⁻⁴ |
-| 26 | support-avoid | −0.0014 | 0.0022 | 0.0006 | 0.0014 | 110.8 | < 10⁻⁵ |
-| 26 | random-mask | +0.0002 | 0.0010 | 0.0005 | 0.0006 | 44.0 | 0.0001 |
+| model | block | control | mean effect | mean \|effect\| | τ | Q/df | p (calibrated) | p (χ², pre-reg.) |
+|---|---|---|---|---|---|---|---|---|
+| GPT-2 | 1 | orth | −0.0006 | 0.0013 | 0.0008 | 2.56 | 0.1154 | 0.0009 |
+| GPT-2 | 1 | support-avoid | +0.0001 | 0.0007 | 0.0006 | 2.05 | 0.1213 | 0.0094 |
+| GPT-2 | 1 | random-mask | −0.0011 | 0.0030 | 0.0019 | 4.85 | 0.0524 | < 10⁻⁴ |
+| GPT-2 | 6 | orth | +0.0002 | 0.0012 | 0.0010 | 3.76 | 0.0140 | < 10⁻⁴ |
+| GPT-2 | 6 | support-avoid | +0.0007 | 0.0019 | 0.0014 | 6.76 | 0.0173 | < 10⁻⁴ |
+| GPT-2 | 6 | random-mask | +0.0002 | 0.0010 | 0.0007 | 3.06 | 0.0286 | < 10⁻⁴ |
+| GPT-2 | 11 | orth | +0.0001 | 0.0012 | 0.0008 | 4.73 | 0.0036 | < 10⁻⁴ |
+| GPT-2 | 11 | support-avoid | −0.0007 | 0.0016 | 0.0010 | 5.50 | 0.0050 | < 10⁻⁴ |
+| GPT-2 | 11 | random-mask | +0.0001 | 0.0006 | 0.0004 | 2.52 | 0.0559 | 0.0009 |
+| Qwen | 1 | orth | +0.0001 | 0.0026 | 0.0021 | 2.79 | 0.0376 | 0.0002 |
+| Qwen | 1 | support-avoid | +0.0001 | 0.0022 | 0.0008 | 1.20 | 0.3765 | 0.2630 |
+| Qwen | 1 | random-mask | +0.0001 | 0.0011 | 0.0000 | 0.76 | 0.7339 | 0.7178 |
+| Qwen | 14 | orth | −0.0004 | 0.0013 | 0.0011 | 3.49 | 0.0224 | < 10⁻⁴ |
+| Qwen | 14 | support-avoid | −0.0005 | 0.0014 | 0.0011 | 3.57 | 0.0288 | < 10⁻⁴ |
+| Qwen | 14 | random-mask | −0.0001 | 0.0006 | 0.0001 | 1.04 | 0.5396 | 0.4082 |
+| Qwen | 26 | orth | −0.0005 | 0.0011 | 0.0007 | 3.30 | 0.0206 | < 10⁻⁴ |
+| Qwen | 26 | support-avoid | −0.0014 | 0.0022 | 0.0014 | 7.39 | 0.0002 | < 10⁻⁴ |
+| Qwen | 26 | random-mask | +0.0002 | 0.0010 | 0.0006 | 2.93 | 0.0438 | 0.0001 |
+| Llama | 1 | orth | −0.0003 | 0.0009 | 0.0007 | 3.36 | 0.0714 | < 10⁻⁴ |
+| Llama | 1 | support-avoid | −0.0003 | 0.0009 | 0.0006 | 4.51 | 0.0529 | < 10⁻⁴ |
+| Llama | 1 | random-mask | +0.0001 | 0.0005 | 0.0004 | 2.81 | 0.0515 | 0.0002 |
+| Llama | 8 | orth | +0.0000 | 0.0003 | 0.0002 | 1.56 | 0.2299 | 0.0749 |
+| Llama | 8 | support-avoid | +0.0000 | 0.0003 | 0.0003 | 2.66 | 0.0438 | 0.0004 |
+| Llama | 8 | random-mask | +0.0002 | 0.0004 | 0.0003 | 2.71 | 0.0596 | 0.0003 |
+| Llama | 14 | orth | +0.0001 | 0.0004 | 0.0003 | 2.84 | 0.0353 | 0.0002 |
+| Llama | 14 | support-avoid | +0.0001 | 0.0004 | 0.0003 | 2.67 | 0.0569 | 0.0004 |
+| Llama | 14 | random-mask | +0.0001 | 0.0004 | 0.0004 | 4.11 | 0.0096 | < 10⁻⁴ |
 
-**KL-matched: heterogeneous everywhere.** All 288 directions matched the KL target (achieved 0.095–0.105), and none needed α = 0. Every one of the 18 cells is heterogeneous at p < 0.005, and 17 pass the pre-registered Bonferroni threshold (p < 0.05/18). The exception is Qwen block 14 random-mask, at p = 0.0049, so H2-KL fails narrowly. In every cell the between-direction spread is larger than under unit projection (τ ratio at least 1.9 in every cell, up to 24, and unbounded in the one cell where τ(P1) = 0), so H3-KL holds 18/18. At one fixed general-language cost, random directions move the bias metric by up to 0.02 nats on average, with signs that vary by direction.
+**KL-matched: heterogeneous almost everywhere.** All 432 directions matched the KL target (achieved 0.095–0.105), and none needed α = 0. Under the calibrated test, 23 of 27 cells are heterogeneous at p < 0.05: all 9 in GPT-2, 8 in Qwen and 6 in Llama. Only 1 of 27 pass Bonferroni, so the pre-registered every-cell prediction (H2-KL) fails. Between-direction spread is larger than under unit projection in all 27 cells (τ ratio 1.9–24, and unbounded in the one cell where τ(P1) = 0). At one fixed general-language cost, random directions move the bias metric by up to 0.02 nats on average, with signs that vary by direction. The Qwen block 14 seeds 8–16, the Qwen blocks 1 and 26 and all Llama cells ran on a second machine (§5.5). Vectors generated there equal desktop-generated ones only up to float32 rounding (cosine 1.0).
 
-**GPT-2, KL-matched at 0.10 nats/position.** These are the same vectors as under P1, with identical hashes:
-
-| block | control | mean effect | mean \|effect\| | τ (KL) | τ (P1) | ratio | Q | p | mean α |
+| model | block | control | mean effect | mean \|effect\| | τ | Q/df | p (calibrated) | p (χ², pre-reg.) | mean α |
 |---|---|---|---|---|---|---|---|---|---|
-| 1 | orth | +0.0014 | 0.0120 | 0.0085 | 0.00075 | 11.3× | 76.1 | < 10⁻⁵ | 7.0 |
-| 1 | support-avoid | +0.0027 | 0.0135 | 0.0101 | 0.00056 | 18.1× | 57.9 | < 10⁻⁵ | 9.2 |
-| 1 | random-mask | +0.0083 | 0.0197 | 0.0094 | 0.00193 | 4.9× | 71.4 | < 10⁻⁵ | 7.1 |
-| 6 | orth | +0.0002 | 0.0052 | 0.0025 | 0.00098 | 2.5× | 49.9 | < 10⁻⁴ | 4.4 |
-| 6 | support-avoid | +0.0002 | 0.0045 | 0.0026 | 0.00140 | 1.9× | 94.4 | < 10⁻⁵ | 3.2 |
-| 6 | random-mask | +0.0027 | 0.0056 | 0.0027 | 0.00072 | 3.8× | 50.5 | < 10⁻⁴ | 6.1 |
-| 11 | orth | −0.0011 | 0.0046 | 0.0035 | 0.00078 | 4.5× | 71.7 | < 10⁻⁵ | 5.5 |
-| 11 | support-avoid | −0.0009 | 0.0035 | 0.0031 | 0.00101 | 3.1× | 63.8 | < 10⁻⁵ | 3.7 |
-| 11 | random-mask | +0.0007 | 0.0035 | 0.0024 | 0.00040 | 6.0× | 43.5 | 0.0001 | 6.4 |
+| GPT-2 | 1 | orth | +0.0014 | 0.0120 | 0.0085 | 5.07 | 0.0302 | < 10⁻⁴ | 7.0 |
+| GPT-2 | 1 | support-avoid | +0.0027 | 0.0135 | 0.0101 | 3.86 | 0.0232 | < 10⁻⁴ | 9.2 |
+| GPT-2 | 1 | random-mask | +0.0083 | 0.0197 | 0.0094 | 4.76 | 0.0463 | < 10⁻⁴ | 7.1 |
+| GPT-2 | 6 | orth | +0.0002 | 0.0052 | 0.0025 | 3.33 | 0.0237 | < 10⁻⁴ | 4.4 |
+| GPT-2 | 6 | support-avoid | +0.0002 | 0.0045 | 0.0026 | 6.30 | 0.0116 | < 10⁻⁴ | 3.2 |
+| GPT-2 | 6 | random-mask | +0.0027 | 0.0056 | 0.0027 | 3.37 | 0.0383 | < 10⁻⁴ | 6.1 |
+| GPT-2 | 11 | orth | −0.0011 | 0.0046 | 0.0035 | 4.78 | 0.0037 | < 10⁻⁴ | 5.5 |
+| GPT-2 | 11 | support-avoid | −0.0009 | 0.0035 | 0.0031 | 4.25 | 0.0215 | < 10⁻⁴ | 3.7 |
+| GPT-2 | 11 | random-mask | +0.0007 | 0.0035 | 0.0024 | 2.90 | 0.0322 | 0.0001 | 6.4 |
+| Qwen | 1 | orth | −0.0057 | 0.0178 | 0.0126 | 3.37 | 0.0213 | < 10⁻⁴ | 7.9 |
+| Qwen | 1 | support-avoid | −0.0098 | 0.0166 | 0.0146 | 2.94 | 0.0264 | 0.0001 | 8.5 |
+| Qwen | 1 | random-mask | −0.0007 | 0.0126 | 0.0111 | 2.64 | 0.0289 | 0.0005 | 8.4 |
+| Qwen | 14 | orth | −0.0075 | 0.0103 | 0.0041 | 3.88 | 0.0190 | < 10⁻⁴ | 6.0 |
+| Qwen | 14 | support-avoid | −0.0086 | 0.0098 | 0.0032 | 4.39 | 0.0168 | < 10⁻⁴ | 5.7 |
+| Qwen | 14 | random-mask | −0.0027 | 0.0061 | 0.0030 | 2.18 | 0.0963 | 0.0049 | 8.1 |
+| Qwen | 26 | orth | −0.0039 | 0.0058 | 0.0037 | 3.17 | 0.0253 | < 10⁻⁴ | 5.9 |
+| Qwen | 26 | support-avoid | −0.0057 | 0.0088 | 0.0063 | 7.92 | 0.0001 | < 10⁻⁴ | 5.3 |
+| Qwen | 26 | random-mask | +0.0009 | 0.0057 | 0.0042 | 3.16 | 0.0270 | < 10⁻⁴ | 7.2 |
+| Llama | 1 | orth | +0.0010 | 0.0075 | 0.0044 | 2.89 | 0.0739 | 0.0002 | 11.3 |
+| Llama | 1 | support-avoid | −0.0000 | 0.0075 | 0.0047 | 4.64 | 0.0212 | < 10⁻⁴ | 10.3 |
+| Llama | 1 | random-mask | +0.0012 | 0.0035 | 0.0031 | 3.64 | 0.0258 | < 10⁻⁴ | 8.7 |
+| Llama | 8 | orth | +0.0027 | 0.0043 | 0.0024 | 1.86 | 0.1525 | 0.0222 | 12.8 |
+| Llama | 8 | support-avoid | +0.0025 | 0.0044 | 0.0038 | 3.28 | 0.0251 | < 10⁻⁴ | 12.4 |
+| Llama | 8 | random-mask | +0.0046 | 0.0057 | 0.0025 | 2.67 | 0.0629 | 0.0004 | 10.6 |
+| Llama | 14 | orth | −0.0023 | 0.0058 | 0.0048 | 2.92 | 0.0464 | 0.0001 | 14.5 |
+| Llama | 14 | support-avoid | −0.0021 | 0.0064 | 0.0050 | 2.78 | 0.0456 | 0.0002 | 14.8 |
+| Llama | 14 | random-mask | −0.0002 | 0.0054 | 0.0044 | 3.16 | 0.0193 | < 10⁻⁴ | 13.5 |
 
-**Qwen3-0.6B, KL-matched at 0.10 nats/position.** Block 14 seeds 1–7 ran on the desktop; block 14 seeds 8–16 and blocks 1 and 26 ran on a second machine (§5.5). Vectors generated there equal their desktop-generated P1 counterparts only up to float32 rounding (cosine 1.0):
+**Additive edits: also not null.** All 12 additive sweeps (576 records) pass the gate. All of them ran on the second machine. *ADD-N.* Adding a random direction the size of a unit projection's displacement barely changes general text (KL ≈ 0.001–0.006 nats per position, interpolated from the pilot's α grid). Yet 14 of 18 cells are heterogeneous, so H6 fails. As under P1, the nulls concentrate at block 1. *ADD-KL.* All 288 directions matched (achieved KL 0.095–0.105), and 13 of 18 cells are heterogeneous (6 past Bonferroni, so H7 fails). Again the nulls sit at block 1, where additive effects are largest (mean |effect| 0.012–0.022) but noisiest. At the same KL, additive random edits spread at least as much as projections: τ(ADD-KL)/τ(KL) has a median of 1.5 and is above 1 in 16 of 18 cells. Switching from removing a component to adding one does not make random directions null.
 
-| block | control | mean effect | mean \|effect\| | τ (KL) | τ (P1) | ratio | Q | p | mean α |
+**ADD-N (matched displacement, α fixed per block: GPT-2 2.797 / 3.955 / 8.455; Qwen 0.221 / 2.834 / 8.969):**
+
+| model | block | control | mean effect | mean \|effect\| | τ | Q/df | p (calibrated) | p (χ², pre-reg.) | mean α |
 |---|---|---|---|---|---|---|---|---|---|
-| 1 | orth | −0.0057 | 0.0178 | 0.0126 | 0.00207 | 6.1× | 50.5 | < 10⁻⁴ | 7.9 |
-| 1 | support-avoid | −0.0098 | 0.0166 | 0.0146 | 0.00083 | 17.6× | 44.1 | 0.0001 | 8.5 |
-| 1 | random-mask | −0.0007 | 0.0126 | 0.0111 | 0.00000 | — (τ(P1) = 0) | 39.6 | 0.0005 | 8.4 |
-| 14 | orth | −0.0075 | 0.0103 | 0.0041 | 0.00107 | 3.8× | 58.1 | < 10⁻⁵ | 6.0 |
-| 14 | support-avoid | −0.0086 | 0.0098 | 0.0032 | 0.00113 | 2.8× | 65.8 | < 10⁻⁵ | 5.7 |
-| 14 | random-mask | −0.0027 | 0.0061 | 0.0030 | 0.00012 | 24.1× | 32.7 | 0.0049 | 8.1 |
-| 26 | orth | −0.0039 | 0.0058 | 0.0037 | 0.00071 | 5.2× | 47.6 | < 10⁻⁴ | 5.9 |
-| 26 | support-avoid | −0.0057 | 0.0088 | 0.0063 | 0.00144 | 4.4× | 118.8 | < 10⁻⁵ | 5.3 |
-| 26 | random-mask | +0.0009 | 0.0057 | 0.0042 | 0.00064 | 6.7× | 47.5 | < 10⁻⁴ | 7.2 |
-
-**Additive edits: still not null.** All 12 additive sweeps (576 records) pass the hardened gate. These runs all used the second host (§5.5). *ADD-N.* Adding a random direction the size of a unit projection's displacement barely changes general text (KL ≈ 0.001–0.006 nats per position, interpolated from the pilot's α grid), yet 17 of 18 cells are heterogeneous at p < 0.05, so H6 fails. The only null cell is Qwen block 1 random-mask, the same cell that was null under P1. The effects are small (mean |effect| 0.0005–0.004) but about 1.5–3× their SEs in the heterogeneous cells. *ADD-KL.* All 288 directions matched (achieved KL 0.095–0.105). All 18 cells are heterogeneous at p < 0.05 and 15 at the pre-registered Bonferroni level, so H7 fails narrowly. The three exceptions are all at block 1 (GPT-2 orth; Qwen support-avoid and random-mask), where additive effects are largest (mean |effect| 0.012–0.022) but also noisiest. At the same KL, additive random edits spread at least as much as projections: τ(ADD-KL)/τ(KL) has a median of 1.5 and is above 1 in 16 of 18 cells. Switching from removing a component to adding one therefore does not make random directions null.
-
-**ADD-N (matched displacement, α fixed per block):**
-
-| model | block | control | α | mean effect | mean \|effect\| | median SE | τ | Q | p |
-|---|---|---|---|---|---|---|---|---|---|
-| GPT-2 | 1 | orth | 2.797 | +0.0011 | 0.0025 | 0.0017 | 0.0021 | 45.6 | < 10⁻⁴ |
-| GPT-2 | 1 | support-avoid | 2.797 | +0.0001 | 0.0028 | 0.0018 | 0.0021 | 42.2 | 0.0002 |
-| GPT-2 | 1 | random-mask | 2.797 | +0.0004 | 0.0041 | 0.0020 | 0.0040 | 78.1 | < 10⁻⁵ |
-| GPT-2 | 6 | orth | 3.955 | +0.0000 | 0.0016 | 0.0008 | 0.0014 | 63.5 | < 10⁻⁵ |
-| GPT-2 | 6 | support-avoid | 3.955 | +0.0001 | 0.0020 | 0.0009 | 0.0020 | 97.0 | < 10⁻⁵ |
-| GPT-2 | 6 | random-mask | 3.955 | +0.0004 | 0.0017 | 0.0009 | 0.0017 | 72.7 | < 10⁻⁵ |
-| GPT-2 | 11 | orth | 8.455 | +0.0002 | 0.0006 | 0.0003 | 0.0006 | 94.1 | < 10⁻⁵ |
-| GPT-2 | 11 | support-avoid | 8.455 | +0.0002 | 0.0006 | 0.0003 | 0.0006 | 102.2 | < 10⁻⁵ |
-| GPT-2 | 11 | random-mask | 8.455 | −0.0000 | 0.0005 | 0.0003 | 0.0005 | 65.8 | < 10⁻⁵ |
-| Qwen | 1 | orth | 0.221 | +0.0003 | 0.0020 | 0.0013 | 0.0018 | 42.2 | 0.0002 |
-| Qwen | 1 | support-avoid | 0.221 | +0.0004 | 0.0016 | 0.0014 | 0.0015 | 32.4 | 0.0058 |
-| Qwen | 1 | random-mask | 0.221 | −0.0002 | 0.0011 | 0.0013 | 0.0005 | 18.0 | 0.2586 |
-| Qwen | 14 | orth | 2.834 | −0.0005 | 0.0025 | 0.0013 | 0.0025 | 72.3 | < 10⁻⁵ |
-| Qwen | 14 | support-avoid | 2.834 | −0.0002 | 0.0021 | 0.0014 | 0.0021 | 48.7 | < 10⁻⁴ |
-| Qwen | 14 | random-mask | 2.834 | −0.0003 | 0.0023 | 0.0012 | 0.0020 | 54.9 | < 10⁻⁵ |
-| Qwen | 26 | orth | 8.969 | −0.0000 | 0.0007 | 0.0002 | 0.0007 | 143.3 | < 10⁻⁵ |
-| Qwen | 26 | support-avoid | 8.969 | −0.0001 | 0.0009 | 0.0003 | 0.0009 | 180.9 | < 10⁻⁵ |
-| Qwen | 26 | random-mask | 8.969 | +0.0001 | 0.0006 | 0.0003 | 0.0008 | 168.1 | < 10⁻⁵ |
+| GPT-2 | 1 | orth | +0.0011 | 0.0025 | 0.0021 | 3.04 | 0.0904 | < 10⁻⁴ | 2.8 |
+| GPT-2 | 1 | support-avoid | +0.0001 | 0.0028 | 0.0021 | 2.81 | 0.1172 | 0.0002 | 2.8 |
+| GPT-2 | 1 | random-mask | +0.0004 | 0.0041 | 0.0040 | 5.21 | 0.0494 | < 10⁻⁴ | 2.8 |
+| GPT-2 | 6 | orth | +0.0000 | 0.0016 | 0.0014 | 4.23 | 0.0165 | < 10⁻⁴ | 4.0 |
+| GPT-2 | 6 | support-avoid | +0.0001 | 0.0020 | 0.0020 | 6.47 | 0.0081 | < 10⁻⁴ | 4.0 |
+| GPT-2 | 6 | random-mask | +0.0004 | 0.0017 | 0.0017 | 4.85 | 0.0059 | < 10⁻⁴ | 4.0 |
+| GPT-2 | 11 | orth | +0.0002 | 0.0006 | 0.0006 | 6.27 | 0.0008 | < 10⁻⁴ | 8.5 |
+| GPT-2 | 11 | support-avoid | +0.0002 | 0.0006 | 0.0006 | 6.81 | 0.0005 | < 10⁻⁴ | 8.5 |
+| GPT-2 | 11 | random-mask | −0.0000 | 0.0005 | 0.0005 | 4.38 | 0.0165 | < 10⁻⁴ | 8.5 |
+| Qwen | 1 | orth | +0.0003 | 0.0020 | 0.0018 | 2.82 | 0.0357 | 0.0002 | 0.2 |
+| Qwen | 1 | support-avoid | +0.0004 | 0.0016 | 0.0015 | 2.16 | 0.0882 | 0.0058 | 0.2 |
+| Qwen | 1 | random-mask | −0.0002 | 0.0011 | 0.0005 | 1.20 | 0.3163 | 0.2586 | 0.2 |
+| Qwen | 14 | orth | −0.0005 | 0.0025 | 0.0025 | 4.82 | 0.0069 | < 10⁻⁴ | 2.8 |
+| Qwen | 14 | support-avoid | −0.0002 | 0.0021 | 0.0021 | 3.25 | 0.0306 | < 10⁻⁴ | 2.8 |
+| Qwen | 14 | random-mask | −0.0003 | 0.0023 | 0.0020 | 3.66 | 0.0069 | < 10⁻⁴ | 2.8 |
+| Qwen | 26 | orth | −0.0000 | 0.0007 | 0.0007 | 9.55 | 0.0003 | < 10⁻⁴ | 9.0 |
+| Qwen | 26 | support-avoid | −0.0001 | 0.0009 | 0.0009 | 12.06 | 0.0004 | < 10⁻⁴ | 9.0 |
+| Qwen | 26 | random-mask | +0.0001 | 0.0006 | 0.0008 | 11.21 | 0.0001 | < 10⁻⁴ | 9.0 |
 
 **ADD-KL (0.10 nats/position):**
 
-| model | block | control | mean effect | mean \|effect\| | τ | Q | p | mean α |
-|---|---|---|---|---|---|---|---|---|
-| GPT-2 | 1 | orth | +0.0202 | 0.0216 | 0.0094 | 29.5 | 0.0141 | 15.1 |
-| GPT-2 | 1 | support-avoid | +0.0125 | 0.0175 | 0.0112 | 36.4 | 0.0017 | 14.6 |
-| GPT-2 | 1 | random-mask | +0.0127 | 0.0182 | 0.0124 | 43.2 | 0.0001 | 14.7 |
-| GPT-2 | 6 | orth | +0.0042 | 0.0082 | 0.0071 | 70.7 | < 10⁻⁵ | 19.6 |
-| GPT-2 | 6 | support-avoid | +0.0055 | 0.0113 | 0.0095 | 83.6 | < 10⁻⁵ | 20.2 |
-| GPT-2 | 6 | random-mask | +0.0062 | 0.0093 | 0.0074 | 64.9 | < 10⁻⁵ | 20.0 |
-| GPT-2 | 11 | orth | +0.0014 | 0.0042 | 0.0037 | 91.1 | < 10⁻⁵ | 62.1 |
-| GPT-2 | 11 | support-avoid | +0.0021 | 0.0050 | 0.0048 | 110.8 | < 10⁻⁵ | 62.7 |
-| GPT-2 | 11 | random-mask | +0.0003 | 0.0038 | 0.0032 | 68.3 | < 10⁻⁵ | 62.1 |
-| Qwen | 1 | orth | −0.0056 | 0.0182 | 0.0172 | 60.3 | < 10⁻⁵ | 2.3 |
-| Qwen | 1 | support-avoid | −0.0015 | 0.0127 | 0.0099 | 29.0 | 0.0157 | 2.4 |
-| Qwen | 1 | random-mask | +0.0090 | 0.0124 | 0.0077 | 25.4 | 0.0440 | 2.4 |
-| Qwen | 14 | orth | −0.0021 | 0.0106 | 0.0112 | 73.3 | < 10⁻⁵ | 13.6 |
-| Qwen | 14 | support-avoid | −0.0020 | 0.0101 | 0.0091 | 43.4 | 0.0001 | 13.5 |
-| Qwen | 14 | random-mask | −0.0036 | 0.0092 | 0.0076 | 37.7 | 0.0010 | 13.5 |
-| Qwen | 26 | orth | +0.0010 | 0.0068 | 0.0069 | 132.5 | < 10⁻⁵ | 99.8 |
-| Qwen | 26 | support-avoid | +0.0002 | 0.0097 | 0.0095 | 191.8 | < 10⁻⁵ | 99.4 |
-| Qwen | 26 | random-mask | +0.0018 | 0.0067 | 0.0078 | 125.1 | < 10⁻⁵ | 98.5 |
+| model | block | control | mean effect | mean \|effect\| | τ | Q/df | p (calibrated) | p (χ², pre-reg.) | mean α |
+|---|---|---|---|---|---|---|---|---|---|
+| GPT-2 | 1 | orth | +0.0202 | 0.0216 | 0.0094 | 1.96 | 0.0913 | 0.0141 | 15.1 |
+| GPT-2 | 1 | support-avoid | +0.0125 | 0.0175 | 0.0112 | 2.43 | 0.0683 | 0.0017 | 14.6 |
+| GPT-2 | 1 | random-mask | +0.0127 | 0.0182 | 0.0124 | 2.88 | 0.0664 | 0.0001 | 14.7 |
+| GPT-2 | 6 | orth | +0.0042 | 0.0082 | 0.0071 | 4.71 | 0.0064 | < 10⁻⁴ | 19.6 |
+| GPT-2 | 6 | support-avoid | +0.0055 | 0.0113 | 0.0095 | 5.57 | 0.0063 | < 10⁻⁴ | 20.2 |
+| GPT-2 | 6 | random-mask | +0.0062 | 0.0093 | 0.0074 | 4.33 | 0.0054 | < 10⁻⁴ | 20.0 |
+| GPT-2 | 11 | orth | +0.0014 | 0.0042 | 0.0037 | 6.07 | 0.0006 | < 10⁻⁴ | 62.1 |
+| GPT-2 | 11 | support-avoid | +0.0021 | 0.0050 | 0.0048 | 7.39 | 0.0002 | < 10⁻⁴ | 62.7 |
+| GPT-2 | 11 | random-mask | +0.0003 | 0.0038 | 0.0032 | 4.56 | 0.0101 | < 10⁻⁴ | 62.1 |
+| Qwen | 1 | orth | −0.0056 | 0.0182 | 0.0172 | 4.02 | 0.0214 | < 10⁻⁴ | 2.3 |
+| Qwen | 1 | support-avoid | −0.0015 | 0.0127 | 0.0099 | 1.94 | 0.0807 | 0.0157 | 2.4 |
+| Qwen | 1 | random-mask | +0.0090 | 0.0124 | 0.0077 | 1.70 | 0.0987 | 0.0440 | 2.4 |
+| Qwen | 14 | orth | −0.0021 | 0.0106 | 0.0112 | 4.89 | 0.0024 | < 10⁻⁴ | 13.6 |
+| Qwen | 14 | support-avoid | −0.0020 | 0.0101 | 0.0091 | 2.89 | 0.0365 | 0.0001 | 13.5 |
+| Qwen | 14 | random-mask | −0.0036 | 0.0092 | 0.0076 | 2.51 | 0.0278 | 0.0010 | 13.5 |
+| Qwen | 26 | orth | +0.0010 | 0.0068 | 0.0069 | 8.84 | 0.0002 | < 10⁻⁴ | 99.8 |
+| Qwen | 26 | support-avoid | +0.0002 | 0.0097 | 0.0095 | 12.79 | 0.0002 | < 10⁻⁴ | 99.4 |
+| Qwen | 26 | random-mask | +0.0018 | 0.0067 | 0.0078 | 8.34 | 0.0006 | < 10⁻⁴ | 98.5 |
+
+**Effect-size reference (post hoc).** ⟨anchor table: baseline mean |bias_before| per model, and the learned source direction's own effect under each condition and block.⟩
 
 **H4: propagation does not explain it.** A(v) barely varies across random directions (coefficient of variation 7% at block 1, 15% at block 6), and it does not predict |effect| under P1 (Spearman ρ = −0.20, one-sided p = 0.91 at block 1; ρ = +0.14, p = 0.17 at block 6). Lens provenance: corpus sha256 `7e0015e0…`, lens sha256 `b2d317b7…`.
 
 **Exploratory.**
-- *Control type does not matter.* Under KL, paired sign-flip tests between every pair of controls, on the signed and absolute effect, in all 6 model × block cells (36 tests) give no p < 0.05, against about 1.8 expected by chance. Under ADD-N and ADD-KL the same 36 tests give 1 and 2 hits, again at chance. Avoiding the source's support, or confining a direction to a random third of the coordinates, leaves its effect indistinguishable from an unconstrained random direction.
+- *Control type does not matter.* Under KL, paired sign-flip tests between every pair of controls, on the signed and absolute effect, in all 9 model × block cells (54 tests) give 2 with p < 0.05, against about 2.7 expected by chance. Under ADD-N and ADD-KL the same 36 tests give 1 and 2 hits, again at chance. Avoiding the source's support, or confining a direction to a random third of the coordinates, leaves its effect indistinguishable from an unconstrained random direction.
 - *What predicts a direction's effect.* Per block, we correlated 4 direction features (logit-lens gender readout, activation gender contrast, projection size, α) with the signed and absolute effect. The only feature motivated in advance was projection size, `proj_rms` = sqrt(E[(h·v)²]) at the edited positions, i.e. how much activation the edit removes. It correlates positively with |effect| under P1 at all three GPT-2 blocks: ρ = +0.32 (p = 0.026), +0.47 (p = 0.001) and +0.35 (p = 0.016). Only block 6 survives Bonferroni across the 24 pooled absolute-effect tests, and no other feature is consistent. Together with H4, this suggests a random direction's effect depends on how much activation lies along it, not on how far it propagates. That is a hypothesis, not a result.
-- *Secondary: PLL-matched at GPT-2 block 11.* All three controls are heterogeneous here too (Q = 55.6–62.6, p < 10⁻⁵), and no pair of controls differs (sign-flip p = 0.13–0.99; τ ratios 0.88–0.94, CIs about 0.4–2.0). Reaching the same PLL cost takes random-mask about twice orth's α. Note that `abs_cos_to_source`, the cosine between |v| and |source|, drops from about 0.62 to 0.09 for support-avoid *by construction*: it checks that the construction worked, not a finding.
+- *Secondary: PLL-matched at GPT-2 block 11.* All three controls are heterogeneous here too (calibrated p = 0.007–0.022), and no pair of controls differs (sign-flip p = 0.13–0.99; τ ratios 0.88–0.94, CIs about 0.4–2.0). Reaching the same PLL cost takes random-mask about twice orth's α. Note that `abs_cos_to_source`, the cosine between |v| and |source|, drops from about 0.62 to 0.09 for support-avoid *by construction*: it checks that the construction worked, not a finding.
 
-| control | mean effect [seed-bootstrap 95% CI] | mean \|effect\| | τ | Q | p | mean α | abs-cos to source |
+| control | mean effect [seed-bootstrap 95% CI] | mean \|effect\| | τ | Q | p (calibrated) | mean α | abs-cos to source |
 |---|---|---|---|---|---|---|---|
-| orth | +0.0015 [−0.0028, +0.0059] | 0.0061 | 0.0037 | 62.6 | < 10⁻⁵ | 6.4 | 0.62 |
-| support-avoid | +0.0002 [−0.0025, +0.0029] | 0.0041 | 0.0035 | 59.0 | < 10⁻⁵ | 4.8 | 0.09 |
-| random-mask | −0.0004 [−0.0044, +0.0033] | 0.0061 | 0.0033 | 55.6 | < 10⁻⁵ | 11.3 | 0.37 |
+| orth | +0.0015 [−0.0028, +0.0059] | 0.0061 | 0.0037 | 62.6 | 0.0074 | 6.4 | 0.62 |
+| support-avoid | +0.0002 [−0.0025, +0.0029] | 0.0041 | 0.0035 | 59.0 | 0.0173 | 4.8 | 0.09 |
+| random-mask | −0.0004 [−0.0044, +0.0033] | 0.0061 | 0.0033 | 55.6 | 0.0221 | 11.3 | 0.37 |
 
 ### 5.5 Compute hosts and cross-host reproducibility
 
@@ -286,19 +314,20 @@ Most runs used one desktop: an AMD Radeon RX 7800 XT with ROCm 7.2 and torch 2.9
 
 ## 6. Discussion
 
-**Relation to the J-space results.** Anthropic's interpretability team reports that matched-norm random perturbations leave Claude models' behaviour near baseline, while edits confined to a small "J-space" of verbalizable directions have strong effects (Anthropic, 2026). Our P1 condition is the closest analogue that open models allow. In the open models we tested, matched-size random edits are *not* reliably null. Under unit projection, random directions have real, direction-specific effects in all 9 GPT-2 cells and in 6 of 9 Qwen cells. Qwen's three nulls sit at its early and middle blocks, the case closest to the J-space finding. A fixed KL budget, a stronger and better-defined size match than either norm or per-seed PLL cost, makes random edits heterogeneous everywhere (17/18 cells past Bonferroni, 18/18 at p < 0.005). How strongly a direction propagates to the output (J-lens A(v)) does not predict which random directions matter. The only feature that tracked their effect, exploratorily, was how much activation lies along the direction. The comparison has limits, but one of them is now tested. Their controls mostly *add* a component, and our additive random edits are not null either: 17/18 cells are heterogeneous even at a displacement that moves general-text KL by only about 0.001–0.006. What remains is that our models are 0.1–0.6B rather than frontier-scale, and that our readout is a small log-probability bias metric rather than behaviour. Our results therefore do not contradict theirs. They show that "a random direction of the same size" is not a safe null by default, and that how the size is matched decides how unsafe it is.
+**Relation to the J-space results.** Anthropic's interpretability team reports that matched-norm random perturbations leave Claude models' behaviour near baseline, while edits confined to a small "J-space" of verbalizable directions have strong effects (Anthropic, 2026). Our results partly agree. Small random edits at the *first* block are essentially null in all three models: 1 of 9 cells under unit projection. Deeper in the network, and whenever the edit is made as large as a realistic intervention by matching a general-text KL budget, random directions are not null. At fixed KL, 23 of 27 projection cells and 13 of 18 additive cells are heterogeneous under a calibrated test. Even additive edits too small to move general-text KL above about 0.006 are heterogeneous in 14 of 18 cells. How strongly a direction propagates to the output (J-lens A(v)) does not predict which random directions matter. The only feature that tracked their effect, exploratorily, was how much activation lies along the direction. Our models are 0.1–1.2B rather than frontier-scale, and our readout is a small log-probability bias metric rather than behaviour, so the results do not contradict theirs. They show that "a random direction of the same size" is not a safe null by default, that how the size is matched decides how unsafe it is, and that depth matters.
 
-**What this means for intervention studies.** A random control is a null baseline only if it is shown to be one, under the size-matching the study actually uses. Here, single random directions produced bias shifts as large as many claimed effects (mean |effect| up to 0.02 nats per position under KL matching), with the sign varying by direction. A study that compares one learned direction against one random direction can therefore find a "significant" difference that is entirely control noise. We recommend that intervention studies (i) state which quantity their controls are matched on (norm, a task cost, or a general-text KL) and why; (ii) compare against a *distribution* of random directions, reporting the between-direction spread τ next to the mean; (iii) check that their uncertainty estimates are calibrated (H1); and (iv) pin every vector they apply, because a regenerated vector can differ silently, even on another machine (§5.5). Evaluation-awareness research is one place this matters directly. The J-space work locates representations of "this is an evaluation" and shows that ablating them changes behaviour. Studies that intervene on such directions, for example to explain behaviour differences between announced and unannounced evaluations of LLM ethical reasoning, need both the provenance guarantees of Section 3 and controls whose size-matching is stated and justified.
+**What this means for intervention studies.** A random control is a null baseline only if it is shown to be one, under the size-matching the study actually uses. Here, single random directions produced bias shifts as large as many claimed effects (mean |effect| up to 0.02 nats per position under KL matching), with the sign varying by direction. A study that compares one learned direction against one random direction can therefore find a "significant" difference that is entirely control noise. We recommend that intervention studies (i) state which quantity their controls are matched on (norm, a task cost, or a general-text KL) and why; (ii) compare against a *distribution* of random directions, reporting the between-direction spread τ next to the mean; (iii) calibrate their test of heterogeneity on the data's own structure, because a standard χ²-based Q, with SEs estimated from a few dozen held-out blocks, rejected true nulls 17–23% of the time here (§5.3); and (iv) pin every vector they apply, because a regenerated vector can differ silently, even on another machine (§5.5). Evaluation-awareness research is one place this matters directly. The J-space work locates representations of "this is an evaluation" and shows that ablating them changes behaviour. Studies that intervene on such directions, for example to explain behaviour differences between announced and unannounced evaluations of LLM ethical reasoning, need both the provenance guarantees of Section 3 and controls whose size-matching is stated and justified.
 
 **The same failure class outside direction vectors.** Any cached derived artifact that is regenerated or checked against itself has the failure modes of Section 4. Compiled GPU code objects cached between builds are one example: a stale cache produces silently wrong outputs unless it is verified against a reference fixed before the change.
 
 ## 7. Limitations
 
-- One bias metric and one family of templates, in two small models (GPT-2 small, 124M; Qwen3-0.6B). Edits are removals (h ← h − α(h·v)v) and additions (h ← h + αv) at a single block; multi-block or learned steering vectors were not tested.
-- The held-out set is small (5% of blocks) and shared by all seeds, so per-direction CIs are correlated. That is why heterogeneity is tested with Q, and why H1 checks the SEs it relies on.
+- One bias metric and one family of templates, in three small models (GPT-2 small, 124M; Qwen3-0.6B; Llama-3.2-1B-Instruct). Edits are removals (h ← h − α(h·v)v) and additions (h ← h + αv) at a single block; multi-block or learned steering vectors were not tested. Additive edits were not run on Llama.
+- The held-out set is small (26 blocks) and shared by all directions. Cochran's Q assumes independent estimates, and its χ² null turned out anticonservative here (§5.3). We therefore report a joint block bootstrap that keeps any shared-split covariance in its null, and calibrated it on resampled real data. That test was added post hoc, after the pre-registered analysis. We report both, and the pre-registered every-cell Bonferroni predictions fail under it. The cross-direction correlation it accounts for turned out to be small (|r̄| ≤ 0.15 in 81 of 93 cells).
+- The pooled binomial probabilities in §5.4 treat cells as independent, which they are not exactly (cells share held-out blocks).
 - The pre-registered PLL-matched condition was flawed (§5.2) and was replaced by a KL-matched condition in a dated addendum, after the flaw was found but before any KL-matched run. Its results are reported as secondary.
 - The GPT-2 block-11 source direction was learned in the wrong space (§5.1).
-- Part of the Qwen KL-matched data came from a second machine (§5.5). Results agree across machines to 10⁻⁶ on a re-run seed, but those vectors are not bit-identical to the desktop's.
+- The additive runs, all Llama runs and part of the Qwen KL data ran on a second machine (§5.5). Results agree across machines to 10⁻⁶ on a re-run seed, but those vectors are not bit-identical to ones generated on the desktop.
 - The Jacobian lens was fitted on 300 paragraphs, fewer than the original authors' 1,000, although they report that about 100 is usable.
 - The gates establish artifact identity, not causal validity. The support-avoid invariants show no leakage onto the source's top-k coordinates, not the absence of other pathways. The pinned ledger is only as trustworthy as its git history.
 
@@ -316,6 +345,11 @@ JLENS_SRC=<jacobian-lens @ 581d398> ./run_followups.sh   # H1, P1 x 3 blocks, J-
 ./run_kl_sweeps.sh                        # KL-matched, GPT-2 x 3 blocks, then Qwen x 3 blocks
 ./run_qwen_kl_laptop.sh                   # the second-machine variant used for part of the Qwen KL data (WSL2/CUDA)
 ./run_add_laptop.sh                       # additive steering, ADD-N and ADD-KL (addendum C; second machine)
+./run_llama_laptop.sh                     # Llama-3.2-1B-Instruct: sources, KL pilot, P1, KL (addendum D; second machine)
+./run_source_ref_laptop.sh                # post hoc: the learned source direction under every condition
+.venv/bin/python scripts/joint_block_test.py --seed-glob '<sweep>/seed*.matched_cost_summary.json'   # calibrated heterogeneity test
+.venv/bin/python scripts/calibrate_homogeneity_tests.py --cell NAME=<glob>                         # its null calibration
+.venv/bin/python scripts/make_paper_tables.py                     # every Section 5 table and count
 
 # Check and analyse any sweep
 .venv/bin/python scripts/check_direction_integrity.py --seed-glob '<sweep>/seed*.matched_cost_summary.json' \
