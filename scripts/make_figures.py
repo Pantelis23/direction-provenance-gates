@@ -104,6 +104,8 @@ def fig_random_directions(out: Path) -> None:
                     ax.plot([li + 0.42, li + 0.42], [lo, hi], color=INK, linewidth=1.0)
                     ax.scatter([li + 0.42], [mu], s=34, marker="D", color=INK, edgecolor=SURF, linewidth=0.7, zorder=4)
             if not any_data:
+                for ln in list(ax.lines):
+                    ln.remove()
                 ax.axis("off")
                 ax.text(0.5, 0.5, "not run\n(additive edits were\nnot tested on Llama)", transform=ax.transAxes,
                         ha="center", va="center", color=INK2, fontsize=8)
