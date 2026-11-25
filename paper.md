@@ -2,6 +2,8 @@
 
 Panteleimon-Panagiotis Christou (independent)
 
+Code, pre-registration and pinned ledgers: https://github.com/Pantelis23/direction-provenance-gates
+
 ## Abstract
 
 Claims about activation interventions are claims about specific direction vectors and about the random directions used as controls. We test both. First, we give a small provenance protocol that stores each direction as a hashed, hermetically copied artifact, and evaluate it by injecting 13 realistic faults into a real experiment. A hardened self-contained integrity gate catches 12 (the original caught 6). The 13th, a run silently redone end to end, is caught only by a hash ledger pinned outside the run, in git. A common regenerate-then-verify CI step catches 2. Second, in a pre-registered study on GPT-2 and Qwen3-0.6B (3 blocks each, 16 random directions per control and condition), random directions are not null controls. Even a plain unit projection has direction-specific effects on a gender-bias metric in 15 of 18 cells, and when every edit is matched to the same general-text KL budget, all 18 cells are heterogeneous (17 at the pre-registered Bonferroni level). The same holds for additive edits, even ones that move general-text KL by only about 0.001–0.006 (17/18 cells). Support-avoiding and subspace-matched random directions behave no differently from unconstrained ones, and Jacobian-lens propagation does not predict which directions matter. Finally, regenerating directions reproduced every hash on the same machine seven months later, but not on different hardware, where vectors shifted by a few float32 ULPs while results agreed to 10⁻⁶. Stored vectors, not regenerated ones, are what should be pinned.
@@ -12,7 +14,7 @@ A direction-based intervention edits a hidden state h along a unit vector d. Cla
 
 None of these failure modes crash anything. The experiment still runs, the numbers still look plausible, and nothing tells you that the vector in the table is not the vector that produced it.
 
-This paper makes three contributions:
+This paper makes three contributions. All code, the pre-registration with its dated addenda, the pinned ledgers and the fault-injection harness are public at https://github.com/Pantelis23/direction-provenance-gates.
 
 1. **A provenance contract for direction vectors** (Section 3): canonical float32 unit vectors, a semantic hash of the payload, hermetic copies inside each run's output, and a ledger of hashes pinned in version control.
 2. **A fault-injection evaluation of the gates** (Section 4): 13 injected faults, showing what a self-contained integrity gate can and cannot catch, and that a common CI pattern (regenerate the manifest, then verify it) catches almost nothing.
@@ -149,6 +151,7 @@ For GPT-2 blocks 1 and 6 we also fit a Jacobian lens (anthropics/jacobian-lens @
 | H2-KL | under KL, all 18 cells heterogeneous at p < 0.05/18 | **failed narrowly**: 17/18 (the 18th at p = 0.0049) |
 | H3-KL | τ(KL) > τ(P1) in a majority of the 18 cells | **held**: 18/18 |
 | H4 | J-lens propagation A(v) predicts \|effect\| under P1 (ρ > 0) | **failed**: ρ = −0.20 (block 1), +0.14 (block 6) |
+| H5 | Qwen3-0.6B replicates H2 and H3 | split into the per-model rows above (Qwen's cells are counted in H3, H2-KL and H3-KL). Its PLL-matched part was superseded with MC by addendum B. |
 | H6 | ADD-N (P1-sized additive edits) is null in a majority of the 18 cells | **failed**: 17/18 heterogeneous at p < 0.05 |
 | H7 | ADD-KL heterogeneous at p < 0.05/18 in all 18 cells | **failed narrowly**: 15/18 (all 18 at p < 0.05) |
 
@@ -327,6 +330,7 @@ Dependencies are frozen in `requirements-lock.txt`. Run summaries embed `runtime
 
 ## References
 
+- Anthropic (2026). jacobian-lens: companion code for the global workspace paper. Software, https://github.com/anthropics/jacobian-lens, commit `581d398`.
 - Anthropic (2026). Verbalizable representations form a global workspace in language models. *Transformer Circuits Thread*. https://transformer-circuits.pub/2026/workspace/
 - Belrose, N., Schneider-Joseph, D., Ravfogel, S., Cotterell, R., Raff, E., & Biderman, S. (2023). LEACE: Perfect linear concept erasure in closed form. *NeurIPS*.
 - Bolukbasi, T., Chang, K.-W., Zou, J., Saligrama, V., & Kalai, A. (2016). Man is to computer programmer as woman is to homemaker? Debiasing word embeddings. *NeurIPS*.
@@ -334,10 +338,14 @@ Dependencies are frozen in `requirements-lock.txt`. Run summaries embed `runtime
 - DerSimonian, R., & Laird, N. (1986). Meta-analysis in clinical trials. *Controlled Clinical Trials*, 7(3).
 - Elazar, Y., Ravfogel, S., Jacovi, A., & Goldberg, Y. (2021). Amnesic probing: Behavioral explanation with amnesic counterfactuals. *TACL*.
 - Gebru, T., et al. (2021). Datasheets for datasets. *Communications of the ACM*, 64(12).
+- Grattafiori, A., et al. (2024). The Llama 3 herd of models. arXiv:2407.21783. Model used: Llama-3.2-1B-Instruct, via the mirror `unsloth/Llama-3.2-1B-Instruct` @ `5a8abab4` (weights sha256 `1ff795ff…`).
 - Li, K., Patel, O., Viégas, F., Pfister, H., & Wattenberg, M. (2023). Inference-time intervention: Eliciting truthful answers from a language model. *NeurIPS*.
+- Merity, S., Xiong, C., Bradbury, J., & Socher, R. (2017). Pointer sentinel mixture models. *ICLR*. arXiv:1609.07843. (WikiText-103.)
 - Mitchell, M., et al. (2019). Model cards for model reporting. *FAT\**.
 - Pineau, J., et al. (2021). Improving reproducibility in machine learning research. *JMLR*, 22.
 - Radford, A., Wu, J., Child, R., Luan, D., Amodei, D., & Sutskever, I. (2019). Language models are unsupervised multitask learners. OpenAI.
 - Ravfogel, S., Elazar, Y., Gonen, H., Twiton, M., & Goldberg, Y. (2020). Null it out: Guarding protected attributes by iterative nullspace projection. *ACL*.
 - Turner, A. M., Thiergart, L., Udell, D., Leech, G., Mini, U., & MacDiarmid, M. (2023). Activation addition: Steering language models without optimization. arXiv:2308.10248.
+- Weidmann, P. E., et al. (2025–2026). heretic. Software, https://github.com/p-e-w/heretic, commit `3521f86`.
+- Yang, A., et al. (2025). Qwen3 technical report. arXiv:2505.09388.
 - Zou, A., et al. (2023). Representation engineering: A top-down approach to AI transparency. arXiv:2310.01405.
